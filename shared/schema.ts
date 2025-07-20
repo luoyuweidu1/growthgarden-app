@@ -51,6 +51,8 @@ export const insertActionSchema = createInsertSchema(actions).omit({
   isCompleted: true,
   completedAt: true,
   createdAt: true,
+}).extend({
+  dueDate: z.union([z.date(), z.string().datetime(), z.null()]).optional(),
 });
 
 export const insertAchievementSchema = createInsertSchema(achievements).omit({

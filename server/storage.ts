@@ -100,7 +100,7 @@ export class MemStorage implements IStorage {
       description: insertAction.description ?? null,
       goalId: insertAction.goalId,
       xpReward: insertAction.xpReward ?? 15,
-      dueDate: insertAction.dueDate || null,
+      dueDate: insertAction.dueDate ? (typeof insertAction.dueDate === 'string' ? new Date(insertAction.dueDate) : insertAction.dueDate) : null,
       isCompleted: false,
       completedAt: null,
       createdAt: new Date(),
