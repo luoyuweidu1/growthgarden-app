@@ -5,9 +5,10 @@ export interface TreeHealth {
   daysSinceWatered: number;
 }
 
-export function calculateTreeHealth(lastWatered: Date): TreeHealth {
+export function calculateTreeHealth(lastWatered: Date | string): TreeHealth {
   const now = new Date();
-  const hoursSinceWatered = (now.getTime() - lastWatered.getTime()) / (1000 * 60 * 60);
+  const lastWateredDate = typeof lastWatered === 'string' ? new Date(lastWatered) : lastWatered;
+  const hoursSinceWatered = (now.getTime() - lastWateredDate.getTime()) / (1000 * 60 * 60);
   const daysSinceWatered = Math.floor(hoursSinceWatered / 24);
   
   const hoursUntilWarning = Math.max(0, 72 - hoursSinceWatered); // 3 days = 72 hours

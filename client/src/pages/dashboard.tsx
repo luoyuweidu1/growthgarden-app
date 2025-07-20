@@ -7,11 +7,13 @@ import { StatsCard } from "@/components/stats-card";
 import { GoalTreeCard } from "@/components/goal-tree-card";
 import { ActionItem } from "@/components/action-item";
 import { GoalCreationModal } from "@/components/goal-creation-modal";
+import { ActionCreationModal } from "@/components/action-creation-modal";
 import { calculateTreeHealth } from "@/lib/tree-health";
-import type { Goal, Action } from "@shared/schema";
+import type { Goal, Action, Achievement } from "@shared/schema";
 
 export default function Dashboard() {
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
   const { data: goals = [], isLoading: goalsLoading } = useQuery<Goal[]>({
     queryKey: ["/api/goals"],
@@ -21,7 +23,7 @@ export default function Dashboard() {
     queryKey: ["/api/actions"],
   });
 
-  const { data: achievements = [] } = useQuery({
+  const { data: achievements = [] } = useQuery<Achievement[]>({
     queryKey: ["/api/achievements"],
   });
 
@@ -123,8 +125,8 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Action Button */}
-        <div className="flex justify-center mb-8">
+        {/* Action Buttons */}
+        <div className="flex justify-center space-x-4 mb-8">
           <Button
             onClick={() => setIsGoalModalOpen(true)}
             className="bg-forest-500 hover:bg-forest-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transform transition-all duration-200 hover:scale-105"
@@ -133,6 +135,16 @@ export default function Dashboard() {
             <Plus className="mr-2" size={20} />
             Plant New Goal
           </Button>
+          {goals.length > 0 && (
+            <Button
+              onClick={() => setIsActionModalOpen(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transform transition-all duration-200 hover:scale-105"
+              size="lg"
+            >
+              <Plus className="mr-2" size={20} />
+              Add Action
+            </Button>
+          )}
         </div>
 
         {/* Garden Grid */}
@@ -248,6 +260,13 @@ export default function Dashboard() {
       <GoalCreationModal
         isOpen={isGoalModalOpen}
         onClose={() => setIsGoalModalOpen(false)}
+      />
+      
+      {/* Action Creation Modal */}
+      <ActionCreationModal
+        isOpen={isActionModalOpen}
+        onClose={() => setIsActionModalOpen(false)}
+        goals={goals}
       />
     </div>
   );
