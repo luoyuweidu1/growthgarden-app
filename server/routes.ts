@@ -90,13 +90,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/actions", async (req, res) => {
     try {
+      console.log("Received action data:", req.body);
       const actionData = insertActionSchema.parse(req.body);
+      console.log("Parsed action data:", actionData);
       const action = await storage.createAction(actionData);
       res.status(201).json(action);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log("Zod validation errors:", error.errors);
         return res.status(400).json({ error: "Invalid action data", details: error.errors });
       }
+      console.log("Action creation error:", error);
       res.status(500).json({ error: "Failed to create action" });
     }
   });

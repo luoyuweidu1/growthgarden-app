@@ -40,6 +40,7 @@ export function ActionCreationModal({ isOpen, onClose, goals }: ActionCreationMo
 
   const createActionMutation = useMutation({
     mutationFn: async (actionData: InsertAction) => {
+      console.log("Sending action data:", actionData);
       const response = await apiRequest("POST", "/api/actions", actionData);
       return response.json();
     },
@@ -92,7 +93,16 @@ export function ActionCreationModal({ isOpen, onClose, goals }: ActionCreationMo
       return;
     }
 
-    createActionMutation.mutate(formData);
+    // Clean the form data to ensure proper serialization
+    const cleanedData: InsertAction = {
+      title: formData.title.trim(),
+      description: formData.description?.trim() || null,
+      goalId: formData.goalId,
+      xpReward: formData.xpReward || 15,
+      dueDate: formData.dueDate || null,
+    };
+    
+    createActionMutation.mutate(cleanedData);
   };
 
   const handleClose = () => {
