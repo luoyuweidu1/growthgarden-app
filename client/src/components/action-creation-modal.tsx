@@ -99,7 +99,7 @@ export function ActionCreationModal({ isOpen, onClose, goals }: ActionCreationMo
       description: formData.description?.trim() || null,
       goalId: formData.goalId,
       xpReward: formData.xpReward || 15,
-      dueDate: formData.dueDate || null,
+      dueDate: formData.dueDate ? (typeof formData.dueDate === 'string' ? new Date(formData.dueDate) : formData.dueDate) : null,
     };
     
     createActionMutation.mutate(cleanedData);
