@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,13 +20,23 @@ export function ActionCreationModal({ isOpen, onClose, goals }: ActionCreationMo
   const [formData, setFormData] = useState<InsertAction>({
     title: '',
     description: '',
-    goalId: 0,
+    goalId: goals.length > 0 ? goals[0].id : 0,
     xpReward: 15,
     dueDate: null,
   });
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Initialize form when modal opens or goals change
+  useEffect(() => {
+    if (isOpen && goals.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        goalId: prev.goalId === 0 ? goals[0].id : prev.goalId
+      }));
+    }
+  }, [isOpen, goals]);
 
   const createActionMutation = useMutation({
     mutationFn: async (actionData: InsertAction) => {
@@ -55,7 +65,7 @@ export function ActionCreationModal({ isOpen, onClose, goals }: ActionCreationMo
     setFormData({
       title: '',
       description: '',
-      goalId: 0,
+      goalId: goals.length > 0 ? goals[0].id : 0,
       xpReward: 15,
       dueDate: null,
     });
@@ -115,7 +125,7 @@ export function ActionCreationModal({ isOpen, onClose, goals }: ActionCreationMo
           <div>
             <Label className="text-sm font-medium text-slate-700">Select Goal</Label>
             <Select
-              value={formData.goalId.toString()}
+              value={formData.goalId > 0 ? formData.goalId.toString() : ""}
               onValueChange={(value) => setFormData(prev => ({ ...prev, goalId: parseInt(value) }))}
             >
               <SelectTrigger className="mt-2">
