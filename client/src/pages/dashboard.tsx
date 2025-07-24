@@ -63,25 +63,25 @@ export default function Dashboard() {
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-forest-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50/30">
       {/* Navigation Header */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-forest-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="bg-white/90 backdrop-blur-sm border-b border-purple-100 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-forest-500 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
                 <Sprout className="text-white" size={20} />
               </div>
-              <span className="text-xl font-bold text-forest-800">GrowthGarden</span>
+              <span className="text-xl font-bold text-gray-800">Growth Garden</span>
             </div>
             
             <div className="flex items-center space-x-6">
               <div className="hidden md:flex items-center space-x-4">
-                <span className="text-sm text-slate-600">Daily Streak: <span className="font-semibold text-forest-600">7 days</span></span>
-                <span className="text-sm text-slate-600">Level: <span className="font-semibold text-purple-600">Gardener</span></span>
+                <span className="text-sm text-gray-600">Daily Streak: <span className="font-semibold text-primary">7 days</span></span>
+                <span className="text-sm text-gray-600">Level: <span className="font-semibold text-primary">Gardener</span></span>
               </div>
               <Button variant="ghost" size="sm" className="p-2 rounded-full">
-                <User className="text-forest-600" size={20} />
+                <User className="text-gray-600" size={20} />
               </Button>
             </div>
           </div>
@@ -92,9 +92,9 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Welcome to Your Growth Garden</h1>
-          <p className="text-slate-600 text-lg">Nurture your goals and watch your personal growth flourish</p>
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-800 mb-3">Welcome to Growth Garden</h1>
+          <p className="text-gray-600 text-lg max-w-md mx-auto">Real-world growth, made simple.</p>
         </div>
 
         {/* Quick Stats */}
@@ -126,33 +126,34 @@ export default function Dashboard() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-center space-x-4 mb-8">
+        <div className="flex justify-center space-x-4 mb-12">
           <Button
             onClick={() => setIsGoalModalOpen(true)}
-            className="bg-forest-500 hover:bg-forest-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transform transition-all duration-200 hover:scale-105"
+            className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-full font-medium text-base shadow-sm transition-all duration-200 hover:shadow-md"
             size="lg"
           >
-            <Plus className="mr-2" size={20} />
+            <Plus className="mr-2" size={18} />
             Plant New Goal
           </Button>
           {goals.length > 0 && (
             <Button
               onClick={() => setIsActionModalOpen(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transform transition-all duration-200 hover:scale-105"
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary hover:text-white px-8 py-4 rounded-full font-medium text-base shadow-sm transition-all duration-200 hover:shadow-md"
               size="lg"
             >
-              <Plus className="mr-2" size={20} />
+              <Plus className="mr-2" size={18} />
               Add Action
             </Button>
           )}
         </div>
 
         {/* Garden Grid */}
-        <Card className="rounded-3xl shadow-lg border border-slate-200 p-8 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-800">Your Growth Garden</h2>
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-semibold text-gray-800">Your Garden</h2>
             <div className="flex items-center space-x-4">
-              <Button variant="secondary" size="sm" className="px-4 py-2">
+              <Button variant="ghost" size="sm" className="px-4 py-2 text-gray-500 hover:text-gray-700">
                 Grid View
               </Button>
             </div>
@@ -166,51 +167,51 @@ export default function Dashboard() {
             {/* Empty Plot for New Goal */}
             <div
               onClick={() => setIsGoalModalOpen(true)}
-              className="flex flex-col items-center space-y-4 p-4 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 border-2 border-dashed border-slate-300 hover:border-forest-300 hover:bg-forest-50 transition-all duration-300 cursor-pointer"
+              className="flex flex-col items-center space-y-4 p-4 rounded-2xl bg-gradient-to-b from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 hover:border-primary hover:bg-purple-50 transition-all duration-300 cursor-pointer"
             >
               <div className="w-20 h-20 flex items-center justify-center text-4xl opacity-50">
-                <Plus className="text-slate-400" size={32} />
+                <Plus className="text-gray-400" size={32} />
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-slate-600 text-sm">Plant New Goal</h3>
-                <p className="text-xs text-slate-500 mt-1">Click to add</p>
+                <h3 className="font-semibold text-gray-600 text-sm">Plant New Goal</h3>
+                <p className="text-xs text-gray-500 mt-1">Click to add</p>
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Today's Actions */}
-        <Card className="rounded-3xl shadow-lg border border-slate-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">Today's Actions</h2>
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Today's Actions</h2>
           
           <div className="space-y-4">
             {upcomingActions.length === 0 ? (
-              <p className="text-slate-500 text-center py-8">No actions scheduled for today</p>
+              <p className="text-gray-500 text-center py-8">No actions scheduled for today</p>
             ) : (
               upcomingActions.map((action) => (
                 <ActionItem key={action.id} action={action} />
               ))
             )}
           </div>
-        </Card>
+        </div>
 
         {/* Progress Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Weekly Progress */}
-          <Card className="rounded-3xl shadow-lg border border-slate-200 p-8">
-            <h3 className="text-xl font-bold text-slate-800 mb-6">Weekly Progress</h3>
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-6">Weekly Progress</h3>
             
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-slate-600">Actions Completed</span>
-                  <span className="text-sm font-bold text-forest-600">
+                  <span className="text-sm font-medium text-gray-600">Actions Completed</span>
+                  <span className="text-sm font-bold text-primary">
                     {allActions.filter(a => a.isCompleted).length}/{allActions.length}
                   </span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-3">
+                <div className="w-full bg-gray-200 rounded-full h-3">
                   <div 
-                    className="bg-forest-500 h-3 rounded-full transition-all duration-300" 
+                    className="bg-primary h-3 rounded-full transition-all duration-300" 
                     style={{ width: `${(allActions.filter(a => a.isCompleted).length / Math.max(allActions.length, 1)) * 100}%` }}
                   />
                 </div>
@@ -218,10 +219,10 @@ export default function Dashboard() {
               
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-slate-600">Goals On Track</span>
+                  <span className="text-sm font-medium text-gray-600">Goals On Track</span>
                   <span className="text-sm font-bold text-blue-600">{activeGoals}/{goals.length}</span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-3">
+                <div className="w-full bg-gray-200 rounded-full h-3">
                   <div 
                     className="bg-blue-500 h-3 rounded-full transition-all duration-300" 
                     style={{ width: `${(activeGoals / Math.max(goals.length, 1)) * 100}%` }}
@@ -229,15 +230,15 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Recent Achievements */}
-          <Card className="rounded-3xl shadow-lg border border-slate-200 p-8">
-            <h3 className="text-xl font-bold text-slate-800 mb-6">Recent Achievements</h3>
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-6">Recent Achievements</h3>
             
             <div className="space-y-4">
               {achievements.length === 0 ? (
-                <p className="text-slate-500 text-center py-8">Complete your first action to unlock achievements!</p>
+                <p className="text-gray-500 text-center py-8">Complete your first action to unlock achievements!</p>
               ) : (
                 achievements.slice(0, 3).map((achievement) => (
                   <div key={achievement.id} className="flex items-center space-x-4 p-4 rounded-2xl bg-yellow-50 border border-yellow-200">
@@ -252,7 +253,7 @@ export default function Dashboard() {
                 ))
               )}
             </div>
-          </Card>
+          </div>
         </div>
       </div>
 

@@ -13,12 +13,12 @@
   --card-foreground: hsl(20, 14.3%, 4.1%);
   --border: hsl(20, 5.9%, 90%);
   --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(142, 71%, 45%);
-  --primary-foreground: hsl(144, 100%, 98%);
-  --secondary: hsl(60, 4.8%, 95.9%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
-  --accent-foreground: hsl(24, 9.8%, 10%);
+  --primary: hsl(259, 94%, 51%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(250, 100%, 97%);
+  --secondary-foreground: hsl(259, 94%, 51%);
+  --accent: hsl(250, 100%, 97%);
+  --accent-foreground: hsl(259, 94%, 51%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
   --ring: hsl(20, 14.3%, 4.1%);
@@ -77,7 +77,7 @@
   }
 
   body {
-    @apply font-sans antialiased bg-gradient-to-br from-forest-50 to-blue-50 text-foreground;
+    @apply font-sans antialiased bg-gradient-to-br from-purple-50 via-white to-purple-50/30 text-foreground;
   }
 }
 
