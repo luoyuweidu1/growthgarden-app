@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Sprout, User } from "lucide-react";
+import { Plus, Sprout, User, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatsCard } from "@/components/stats-card";
@@ -8,12 +8,14 @@ import { GoalTreeCard } from "@/components/goal-tree-card";
 import { ActionItem } from "@/components/action-item";
 import { GoalCreationModal } from "@/components/goal-creation-modal";
 import { ActionCreationModal } from "@/components/action-creation-modal";
+import { ExportModal } from "@/components/export-modal";
 import { calculateTreeHealth } from "@/lib/tree-health";
 import type { Goal, Action, Achievement } from "@shared/schema";
 
 export default function Dashboard() {
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const { data: goals = [], isLoading: goalsLoading } = useQuery<Goal[]>({
     queryKey: ["/api/goals"],
@@ -80,9 +82,19 @@ export default function Dashboard() {
                 <span className="text-sm text-gray-600">Daily Streak: <span className="font-semibold text-primary">7 days</span></span>
                 <span className="text-sm text-gray-600">Level: <span className="font-semibold text-primary">Gardener</span></span>
               </div>
-              <Button variant="ghost" size="sm" className="p-2 rounded-full">
-                <User className="text-gray-600" size={20} />
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsExportModalOpen(true)}
+                  className="p-2 rounded-full hover:bg-purple-100"
+                >
+                  <Download className="text-gray-600" size={20} />
+                </Button>
+                <Button variant="ghost" size="sm" className="p-2 rounded-full">
+                  <User className="text-gray-600" size={20} />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -153,6 +165,15 @@ export default function Dashboard() {
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-semibold text-gray-800">Your Garden</h2>
             <div className="flex items-center space-x-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsExportModalOpen(true)}
+                className="px-4 py-2 border-primary text-primary hover:bg-primary hover:text-white"
+              >
+                <Download size={16} className="mr-2" />
+                Export Progress
+              </Button>
               <Button variant="ghost" size="sm" className="px-4 py-2 text-gray-500 hover:text-gray-700">
                 Grid View
               </Button>
@@ -268,6 +289,14 @@ export default function Dashboard() {
         isOpen={isActionModalOpen}
         onClose={() => setIsActionModalOpen(false)}
         goals={goals}
+      />
+      
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        goals={goals}
+        actions={allActions}
       />
     </div>
   );
