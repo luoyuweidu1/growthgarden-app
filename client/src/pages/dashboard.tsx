@@ -1,21 +1,52 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, Sprout, User, Download } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Sprout, Plus, Download, User, Check, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { StatsCard } from "@/components/stats-card";
-import { GoalTreeCard } from "@/components/goal-tree-card";
-import { ActionItem } from "@/components/action-item";
 import { GoalCreationModal } from "@/components/goal-creation-modal";
 import { ActionCreationModal } from "@/components/action-creation-modal";
 import { ExportModal } from "@/components/export-modal";
-import { calculateTreeHealth } from "@/lib/tree-health";
+import { GoalTreeCard } from "@/components/goal-tree-card";
+import { StatsCard } from "@/components/stats-card";
+import { ActionItem } from "@/components/action-item";
+import { WeeklyReflectionReport } from "@/components/weekly-reflection-report";
+import { DailyHabitsCheckin } from "@/components/daily-habits-checkin";
+import { apiRequest } from "@/lib/queryClient";
 import type { Goal, Action, Achievement } from "@shared/schema";
+import { calculateTreeHealth } from "@/lib/tree-health";
+import { useAuth } from "@/components/auth-provider";
 
 export default function Dashboard() {
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isWeeklyReportOpen, setIsWeeklyReportOpen] = useState(false);
+
+  const queryClient = useQueryClient();
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  // Trigger achievement check on page load
+  const achievementCheckMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/achievements/check");
+    },
+    onSuccess: () => {
+      // Invalidate achievements query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["/api/achievements"] });
+    },
+  });
+
+  useEffect(() => {
+    achievementCheckMutation.mutate();
+  }, []);
 
   const { data: goals = [], isLoading: goalsLoading } = useQuery<Goal[]>({
     queryKey: ["/api/goals"],
@@ -31,8 +62,10 @@ export default function Dashboard() {
 
   if (goalsLoading || actionsLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-500"></div>
+      <div className="min-h-screen flex items-center justify-center fluid-gradient">
+        <div className="organic-shape bg-white/80 backdrop-blur-sm p-8 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
       </div>
     );
   }
@@ -65,34 +98,47 @@ export default function Dashboard() {
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50/30">
+    <div className="min-h-screen fluid-gradient">
       {/* Navigation Header */}
-      <nav className="bg-white/90 backdrop-blur-sm border-b border-purple-100 sticky top-0 z-50">
+      <nav className="bg-white/80 backdrop-blur-md border-b border-sage-200/50 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                <Sprout className="text-white" size={20} />
+              <div className="organic-shape bg-gradient-to-br from-primary to-moss-500 w-12 h-12 flex items-center justify-center shadow-lg animate-float">
+                <Sprout className="text-white" size={24} />
               </div>
-              <span className="text-xl font-bold text-gray-800">Growth Garden</span>
+              <span className="text-xl font-bold text-sage-800">Growth Garden</span>
             </div>
             
             <div className="flex items-center space-x-6">
               <div className="hidden md:flex items-center space-x-4">
-                <span className="text-sm text-gray-600">Daily Streak: <span className="font-semibold text-primary">7 days</span></span>
-                <span className="text-sm text-gray-600">Level: <span className="font-semibold text-primary">Gardener</span></span>
+                <span className="text-sm text-sage-600">Daily Streak: <span className="font-semibold text-primary">7 days</span></span>
+                <span className="text-sm text-sage-600">Level: <span className="font-semibold text-primary">Gardener</span></span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+              <div className="flex items-center space-x-4">
+                <Button
                   onClick={() => setIsExportModalOpen(true)}
-                  className="p-2 rounded-full hover:bg-purple-100"
+                  variant="ghost"
+                  className="organic-shape hover:bg-sage-100/50 transition-all duration-300"
                 >
-                  <Download className="text-gray-600" size={20} />
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
                 </Button>
-                <Button variant="ghost" size="sm" className="p-2 rounded-full">
-                  <User className="text-gray-600" size={20} />
+                <Button
+                  onClick={() => setIsWeeklyReportOpen(true)}
+                  variant="ghost"
+                  className="organic-shape hover:bg-sage-100/50 transition-all duration-300 border border-primary/20"
+                >
+                  <Sparkles className="w-4 h-4 mr-2 text-primary" />
+                  <span className="text-primary font-medium">Weekly Report</span>
+                </Button>
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  className="organic-shape hover:bg-red-100/50 transition-all duration-300 text-red-600"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
                 </Button>
               </div>
             </div>
@@ -104,9 +150,11 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Welcome Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-3">Welcome to Growth Garden</h1>
-          <p className="text-gray-600 text-lg max-w-md mx-auto">Real-world growth, made simple.</p>
+        <div className="text-center mb-6">
+          <div className="organic-shape bg-white/80 backdrop-blur-sm p-8 mb-4 inline-block">
+            <h1 className="text-4xl font-bold text-sage-800 mb-3">Welcome to Growth Garden</h1>
+            <p className="text-sage-600 text-lg max-w-md mx-auto">Real-world growth, made simple.</p>
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -137,11 +185,16 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Life Energy Cornerstone */}
+        <div className="mb-8">
+          <DailyHabitsCheckin />
+        </div>
+
         {/* Action Buttons */}
         <div className="flex justify-center space-x-4 mb-12">
           <Button
             onClick={() => setIsGoalModalOpen(true)}
-            className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-full font-medium text-base shadow-sm transition-all duration-200 hover:shadow-md"
+            className="biomorphic-button text-white px-8 py-4 font-medium text-base"
             size="lg"
           >
             <Plus className="mr-2" size={18} />
@@ -151,7 +204,7 @@ export default function Dashboard() {
             <Button
               onClick={() => setIsActionModalOpen(true)}
               variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-white px-8 py-4 rounded-full font-medium text-base shadow-sm transition-all duration-200 hover:shadow-md"
+              className="organic-shape border-primary text-primary hover:bg-primary hover:text-white px-8 py-4 font-medium text-base shadow-lg transition-all duration-300 hover:shadow-xl"
               size="lg"
             >
               <Plus className="mr-2" size={18} />
@@ -161,20 +214,20 @@ export default function Dashboard() {
         </div>
 
         {/* Garden Grid */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-8">
+        <div className="biomorphic-card p-8 mb-8">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800">Your Garden</h2>
+            <h2 className="text-2xl font-semibold text-sage-800">Your Garden</h2>
             <div className="flex items-center space-x-4">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setIsExportModalOpen(true)}
-                className="px-4 py-2 border-primary text-primary hover:bg-primary hover:text-white"
+                className="organic-shape px-4 py-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
               >
                 <Download size={16} className="mr-2" />
                 Export Progress
               </Button>
-              <Button variant="ghost" size="sm" className="px-4 py-2 text-gray-500 hover:text-gray-700">
+              <Button variant="ghost" size="sm" className="organic-shape px-4 py-2 text-sage-500 hover:text-sage-700 transition-all duration-300">
                 Grid View
               </Button>
             </div>
@@ -182,32 +235,32 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
             {goals.map((goal) => (
-              <GoalTreeCard key={goal.id} goal={goal} />
+              <GoalTreeCard key={goal.id} goal={goal} actions={allActions} />
             ))}
             
             {/* Empty Plot for New Goal */}
             <div
               onClick={() => setIsGoalModalOpen(true)}
-              className="flex flex-col items-center space-y-4 p-4 rounded-2xl bg-gradient-to-b from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 hover:border-primary hover:bg-purple-50 transition-all duration-300 cursor-pointer"
+              className="organic-shape-alt flex flex-col items-center space-y-4 p-4 bg-gradient-to-b from-sage-50 to-moss-50 border-2 border-dashed border-sage-300 hover:border-primary hover:bg-primary/5 transition-all duration-300 cursor-pointer animate-ripple"
             >
               <div className="w-20 h-20 flex items-center justify-center text-4xl opacity-50">
-                <Plus className="text-gray-400" size={32} />
+                <Plus className="text-sage-400" size={32} />
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-gray-600 text-sm">Plant New Goal</h3>
-                <p className="text-xs text-gray-500 mt-1">Click to add</p>
+                <h3 className="font-semibold text-sage-600 text-sm">Plant New Goal</h3>
+                <p className="text-xs text-sage-500 mt-1">Click to add</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Today's Actions */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Today's Actions</h2>
+        <div className="biomorphic-card p-8 mb-8">
+          <h2 className="text-2xl font-semibold text-sage-800 mb-6">Today's Actions</h2>
           
           <div className="space-y-4">
             {upcomingActions.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No actions scheduled for today</p>
+              <p className="text-sage-500 text-center py-8">No actions scheduled for today</p>
             ) : (
               upcomingActions.map((action) => (
                 <ActionItem key={action.id} action={action} />
@@ -219,20 +272,20 @@ export default function Dashboard() {
         {/* Progress Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Weekly Progress */}
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-6">Weekly Progress</h3>
+          <div className="biomorphic-card p-8">
+            <h3 className="text-xl font-semibold text-sage-800 mb-6">Weekly Progress</h3>
             
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">Actions Completed</span>
+                  <span className="text-sm font-medium text-sage-600">Actions Completed</span>
                   <span className="text-sm font-bold text-primary">
                     {allActions.filter(a => a.isCompleted).length}/{allActions.length}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-sage-200/50 rounded-full h-3">
                   <div 
-                    className="bg-primary h-3 rounded-full transition-all duration-300" 
+                    className="bg-gradient-to-r from-primary to-moss-500 h-3 rounded-full transition-all duration-300" 
                     style={{ width: `${(allActions.filter(a => a.isCompleted).length / Math.max(allActions.length, 1)) * 100}%` }}
                   />
                 </div>
@@ -240,12 +293,12 @@ export default function Dashboard() {
               
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">Goals On Track</span>
-                  <span className="text-sm font-bold text-blue-600">{activeGoals}/{goals.length}</span>
+                  <span className="text-sm font-medium text-sage-600">Goals On Track</span>
+                  <span className="text-sm font-bold text-moss-600">{activeGoals}/{goals.length}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-sage-200/50 rounded-full h-3">
                   <div 
-                    className="bg-blue-500 h-3 rounded-full transition-all duration-300" 
+                    className="bg-gradient-to-r from-moss-500 to-clay-500 h-3 rounded-full transition-all duration-300" 
                     style={{ width: `${(activeGoals / Math.max(goals.length, 1)) * 100}%` }}
                   />
                 </div>
@@ -253,27 +306,101 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Recent Achievements */}
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-6">Recent Achievements</h3>
-            
+          {/* Stats Card Placeholder */}
+          <div className="biomorphic-card p-8">
+            <h3 className="text-xl font-semibold text-sage-800 mb-6">Quick Stats</h3>
             <div className="space-y-4">
-              {achievements.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Complete your first action to unlock achievements!</p>
-              ) : (
-                achievements.slice(0, 3).map((achievement) => (
-                  <div key={achievement.id} className="flex items-center space-x-4 p-4 rounded-2xl bg-yellow-50 border border-yellow-200">
-                    <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-sage-600">Total XP Earned</span>
+                <span className="text-lg font-bold text-primary">
+                  {allActions.filter(a => a.isCompleted).reduce((sum, action) => sum + action.xpReward, 0)} XP
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-sage-600">Current Streak</span>
+                <span className="text-lg font-bold text-moss-600">7 days</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-sage-600">Highest Level</span>
+                <span className="text-lg font-bold text-clay-600">
+                  {goals.length > 0 ? Math.max(...goals.map(g => g.currentLevel)) : 0}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Achievements & Actions */}
+        <div className="biomorphic-card p-8 mt-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-sage-800">Recent Activity</h3>
+            <Button
+              onClick={() => achievementCheckMutation.mutate()}
+              disabled={achievementCheckMutation.isPending}
+              variant="ghost"
+              size="sm"
+              className="organic-shape hover:bg-sage-100/50 transition-all duration-300"
+            >
+              {achievementCheckMutation.isPending ? "Checking..." : "🔄 Check"}
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            {achievements.length === 0 && allActions.filter(action => action.isCompleted).length === 0 ? (
+              <p className="text-sage-500 text-center py-8">Complete your first action to see activity here!</p>
+            ) : (
+              <>
+                {/* Show completed actions first */}
+                {allActions
+                  .filter(action => action.isCompleted)
+                  .sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())
+                  .slice(0, 3)
+                  .map((action) => {
+                    const goal = goals.find(g => g.id === action.goalId);
+                    return (
+                      <div key={`action-${action.id}`} className="organic-shape flex items-center space-x-4 p-4 bg-gradient-to-r from-forest-50 to-forest-100/60 border border-forest-200/50">
+                        <div className="organic-shape w-10 h-10 bg-gradient-to-br from-forest-500 to-forest-600 flex items-center justify-center">
+                          <Check className="text-white" size={16} />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sage-800">{action.title}</h4>
+                          <p className="text-sm text-sage-600">
+                            {goal?.name && `Goal: ${goal.name} • `}
+                            {action.completedAt && `Completed ${new Date(action.completedAt).toLocaleDateString()}`}
+                          </p>
+                          {action.feeling && (
+                            <p className="text-xs text-moss-600 mt-1">
+                              😊 Feeling: {action.feeling}
+                              {action.satisfaction && ` • Satisfaction: ${action.satisfaction}/5`}
+                            </p>
+                          )}
+                          {action.personalReward && (
+                            <p className="text-xs text-moss-600 mt-1">
+                              🎁 Reward: {action.personalReward}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-forest-500 text-sm font-medium">
+                          +{action.xpReward} XP
+                        </div>
+                      </div>
+                    );
+                  })}
+                
+                {/* Show achievements */}
+                {achievements.slice(0, 3).map((achievement) => (
+                  <div key={`achievement-${achievement.id}`} className="organic-shape flex items-center space-x-4 p-4 bg-gradient-to-r from-clay-50 to-stone-50 border border-clay-200">
+                    <div className="organic-shape w-10 h-10 bg-gradient-to-br from-clay-500 to-stone-500 flex items-center justify-center">
                       <span className="text-white text-lg">{achievement.iconName}</span>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-slate-800">{achievement.title}</h4>
-                      <p className="text-sm text-slate-600">{achievement.description}</p>
+                      <h4 className="font-semibold text-sage-800">{achievement.title}</h4>
+                      <p className="text-sm text-sage-600">{achievement.description}</p>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -297,6 +424,11 @@ export default function Dashboard() {
         onClose={() => setIsExportModalOpen(false)}
         goals={goals}
         actions={allActions}
+      />
+
+      <WeeklyReflectionReport
+        isOpen={isWeeklyReportOpen}
+        onClose={() => setIsWeeklyReportOpen(false)}
       />
     </div>
   );

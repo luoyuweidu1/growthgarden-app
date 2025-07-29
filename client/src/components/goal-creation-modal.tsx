@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/auth-provider";
 import { cn } from "@/lib/utils";
 import type { InsertGoal } from "@shared/schema";
 
@@ -25,13 +26,22 @@ const plantTypes = [
 ];
 
 export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
+  const { user } = useAuth();
+  const [selectedPlantType, setSelectedPlantType] = useState('sprout');
   const [formData, setFormData] = useState<InsertGoal>({
     name: '',
     description: '',
-    plantType: 'sprout',
+    plantType: selectedPlantType,
     timelineMonths: 3,
+    userId: user?.id || '',
   });
-  const [selectedPlantType, setSelectedPlantType] = useState('sprout');
+
+  // Update userId when user changes
+  React.useEffect(() => {
+    if (user?.id) {
+      setFormData(prev => ({ ...prev, userId: user.id }));
+    }
+  }, [user?.id]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -65,6 +75,7 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
       description: '',
       plantType: 'sprout',
       timelineMonths: 3,
+      userId: user?.id || '',
     });
     setSelectedPlantType('sprout');
   };
@@ -81,9 +92,18 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
       return;
     }
 
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a goal.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createGoalMutation.mutate({
       ...formData,
-      plantType: selectedPlantType,
+      userId: user.id,
     });
   };
 
@@ -94,14 +114,14 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto biomorphic-card">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-slate-800">Plant a New Goal</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-sage-800">Plant a New Goal</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div>
-            <Label htmlFor="name" className="text-sm font-medium text-slate-700">
+            <Label htmlFor="name" className="text-sm font-medium text-sage-700">
               Goal Name
             </Label>
             <Input
@@ -109,34 +129,37 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="e.g., Become a skilled investor"
-              className="mt-2"
+              className="mt-2 organic-shape border-sage-200 focus:border-primary transition-all duration-300"
               required
             />
           </div>
           
           <div>
-            <Label className="text-sm font-medium text-slate-700">Choose Your Plant</Label>
+            <Label className="text-sm font-medium text-sage-700">Choose Your Plant</Label>
             <div className="grid grid-cols-4 gap-4 mt-2">
               {plantTypes.map((plant) => (
                 <div
                   key={plant.value}
-                  onClick={() => setSelectedPlantType(plant.value)}
+                  onClick={() => {
+                    setSelectedPlantType(plant.value);
+                    setFormData(prev => ({ ...prev, plantType: plant.value }));
+                  }}
                   className={cn(
-                    "p-4 rounded-xl border-2 text-center cursor-pointer transition-colors",
+                    "p-4 organic-shape border-2 text-center cursor-pointer transition-all duration-300",
                     selectedPlantType === plant.value
-                      ? "border-forest-300 bg-forest-50"
-                      : "border-slate-300 hover:bg-slate-50"
+                      ? "border-forest-300 bg-gradient-to-br from-forest-50/80 to-forest-100/60 shadow-lg"
+                      : "border-sage-300 hover:bg-sage-50/50 hover:border-sage-400"
                   )}
                 >
                   <div className="text-3xl mb-2">{plant.emoji}</div>
-                  <span className="text-sm font-medium">{plant.name}</span>
+                  <span className="text-sm font-medium text-sage-700">{plant.name}</span>
                 </div>
               ))}
             </div>
           </div>
           
           <div>
-            <Label htmlFor="description" className="text-sm font-medium text-slate-700">
+            <Label htmlFor="description" className="text-sm font-medium text-sage-700">
               Goal Description
             </Label>
             <Textarea
@@ -145,22 +168,22 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe what you want to achieve..."
               rows={3}
-              className="mt-2"
+              className="mt-2 organic-shape border-sage-200 focus:border-primary transition-all duration-300"
             />
           </div>
           
           <div>
-            <Label htmlFor="timeline" className="text-sm font-medium text-slate-700">
+            <Label htmlFor="timeline" className="text-sm font-medium text-sage-700">
               Timeline
             </Label>
             <Select
-              value={formData.timelineMonths.toString()}
+              value={(formData.timelineMonths || 3).toString()}
               onValueChange={(value) => setFormData(prev => ({ ...prev, timelineMonths: parseInt(value) }))}
             >
-              <SelectTrigger className="mt-2">
+              <SelectTrigger className="mt-2 organic-shape border-sage-200 focus:border-primary transition-all duration-300">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="biomorphic-card">
                 <SelectItem value="3">3 months</SelectItem>
                 <SelectItem value="6">6 months</SelectItem>
                 <SelectItem value="12">1 year</SelectItem>
@@ -174,13 +197,14 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
               type="button"
               variant="ghost"
               onClick={handleClose}
+              className="organic-shape hover:bg-sage-100/50 transition-all duration-300"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={createGoalMutation.isPending}
-              className="bg-forest-500 hover:bg-forest-600"
+              className="biomorphic-button"
             >
               {createGoalMutation.isPending ? "Planting..." : "Plant Goal"}
             </Button>

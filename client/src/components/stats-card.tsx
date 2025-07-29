@@ -18,24 +18,28 @@ const iconMap = {
 
 const colorMap = {
   forest: {
-    bg: "bg-green-100",
-    text: "text-green-600",
-    value: "text-green-700",
+    bg: "bg-gradient-to-br from-forest-100/80 to-forest-200/60",
+    text: "text-forest-600",
+    value: "text-forest-700",
+    border: "border-forest-200/50",
   },
   blue: {
-    bg: "bg-blue-100", 
-    text: "text-blue-600",
-    value: "text-blue-700",
+    bg: "bg-gradient-to-br from-sage-100/80 to-sage-200/60", 
+    text: "text-sage-600",
+    value: "text-sage-700",
+    border: "border-sage-200/50",
   },
   purple: {
-    bg: "bg-purple-100",
-    text: "text-purple-600", 
-    value: "text-purple-700",
+    bg: "bg-gradient-to-br from-moss-100/80 to-moss-200/60",
+    text: "text-moss-600", 
+    value: "text-moss-700",
+    border: "border-moss-200/50",
   },
   orange: {
-    bg: "bg-orange-100",
-    text: "text-orange-600",
-    value: "text-orange-700",
+    bg: "bg-gradient-to-br from-clay-100/80 to-clay-200/60",
+    text: "text-clay-600",
+    value: "text-clay-700",
+    border: "border-clay-200/50",
   },
 };
 
@@ -44,13 +48,13 @@ export function StatsCard({ title, value, icon, color }: StatsCardProps) {
   const colorStyles = colorMap[color];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className="biomorphic-card p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
+          <p className="text-sm text-sage-600 mb-1">{title}</p>
           <p className={cn("text-2xl font-semibold", colorStyles.value)}>{value}</p>
         </div>
-        <div className={cn("p-3 rounded-full", colorStyles.bg)}>
+        <div className={cn("p-3 organic-shape shadow-sm", colorStyles.bg)}>
           <Icon className={cn("text-lg", colorStyles.text)} size={20} />
         </div>
       </div>

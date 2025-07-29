@@ -176,9 +176,9 @@ export function ExportModal({ isOpen, onClose, goals, actions }: ExportModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl biomorphic-card">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-sage-800">
             <Download size={20} />
             Export Garden Progress
           </DialogTitle>
@@ -187,7 +187,7 @@ export function ExportModal({ isOpen, onClose, goals, actions }: ExportModalProp
         <div className="space-y-6">
           {/* Export Type Selection */}
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">
+            <Label className="text-sm font-medium text-sage-700 mb-3 block">
               What would you like to export?
             </Label>
             <RadioGroup
@@ -201,10 +201,10 @@ export function ExportModal({ isOpen, onClose, goals, actions }: ExportModalProp
                   <div key={option.type} className="flex items-center space-x-3">
                     <RadioGroupItem value={option.type} id={option.type} />
                     <Label htmlFor={option.type} className="flex items-center space-x-3 cursor-pointer">
-                      <Icon size={18} className="text-gray-600" />
+                      <Icon size={18} className="text-sage-600" />
                       <div>
-                        <div className="font-medium text-gray-800">{option.title}</div>
-                        <div className="text-sm text-gray-600">{option.description}</div>
+                        <div className="font-medium text-sage-800">{option.title}</div>
+                        <div className="text-sm text-sage-600">{option.description}</div>
                       </div>
                     </Label>
                   </div>
@@ -215,14 +215,14 @@ export function ExportModal({ isOpen, onClose, goals, actions }: ExportModalProp
 
           {/* Format Selection */}
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+            <Label className="text-sm font-medium text-sage-700 mb-2 block">
               Export Format
             </Label>
             <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as ExportFormat)}>
-              <SelectTrigger>
+              <SelectTrigger className="organic-shape border-sage-200 focus:border-primary transition-all duration-300">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="biomorphic-card">
                 <SelectItem value="csv">CSV (Excel compatible)</SelectItem>
                 <SelectItem value="json">JSON (Developer format)</SelectItem>
                 <SelectItem value="pdf">PDF (Coming soon - exports as JSON)</SelectItem>
@@ -232,14 +232,14 @@ export function ExportModal({ isOpen, onClose, goals, actions }: ExportModalProp
 
           {/* Date Range Selection */}
           <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+            <Label className="text-sm font-medium text-sage-700 mb-2 block">
               Date Range
             </Label>
             <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger>
+              <SelectTrigger className="organic-shape border-sage-200 focus:border-primary transition-all duration-300">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="biomorphic-card">
                 <SelectItem value="all">All time</SelectItem>
                 <SelectItem value="30">Last 30 days</SelectItem>
                 <SelectItem value="90">Last 90 days</SelectItem>
@@ -249,9 +249,9 @@ export function ExportModal({ isOpen, onClose, goals, actions }: ExportModalProp
           </div>
 
           {/* Preview */}
-          <Card className="bg-gray-50">
+          <Card className="biomorphic-card">
             <CardContent className="p-4">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-sage-600">
                 <strong>Preview:</strong> This will export{" "}
                 {exportType === 'summary' && 'a summary of your goals and overall progress'}
                 {exportType === 'detailed' && 'detailed information about all goals and actions'}
@@ -264,13 +264,17 @@ export function ExportModal({ isOpen, onClose, goals, actions }: ExportModalProp
 
           {/* Export Button */}
           <div className="flex justify-end space-x-3">
-            <Button variant="outline" onClick={onClose}>
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              className="organic-shape hover:bg-sage-100/50 transition-all duration-300"
+            >
               Cancel
             </Button>
             <Button 
               onClick={handleExport}
               disabled={isExporting}
-              className="bg-primary hover:bg-primary/90"
+              className="biomorphic-button"
             >
               {isExporting ? (
                 <>

@@ -1,4 +1,4 @@
-import { goals, actions, achievements, type Goal, type InsertGoal, type Action, type InsertAction, type Achievement, type InsertAchievement } from "@shared/schema";
+import { goals, actions, achievements, dailyHabits, type Goal, type InsertGoal, type Action, type InsertAction, type Achievement, type InsertAchievement, type DailyHabit, type InsertDailyHabit } from "@shared/schema";
 
 export interface IStorage {
   // Goals
@@ -19,23 +19,33 @@ export interface IStorage {
   // Achievements
   getAchievements(): Promise<Achievement[]>;
   createAchievement(achievement: InsertAchievement): Promise<Achievement>;
+  
+  // Daily Habits
+  getDailyHabit(date: string): Promise<DailyHabit | undefined>;
+  getDailyHabits(startDate: string, endDate: string): Promise<DailyHabit[]>;
+  createDailyHabit(habit: InsertDailyHabit): Promise<DailyHabit>;
+  updateDailyHabit(date: string, updates: Partial<DailyHabit>): Promise<DailyHabit | undefined>;
 }
 
 export class MemStorage implements IStorage {
   private goals: Map<number, Goal>;
   private actions: Map<number, Action>;
   private achievements: Map<number, Achievement>;
+  private dailyHabits: Map<string, DailyHabit>; // Key is date string (YYYY-MM-DD)
   private currentGoalId: number;
   private currentActionId: number;
   private currentAchievementId: number;
+  private currentDailyHabitId: number;
 
   constructor() {
     this.goals = new Map();
     this.actions = new Map();
     this.achievements = new Map();
+    this.dailyHabits = new Map();
     this.currentGoalId = 1;
     this.currentActionId = 1;
     this.currentAchievementId = 1;
+    this.currentDailyHabitId = 1;
   }
 
   // Goals
@@ -100,9 +110,15 @@ export class MemStorage implements IStorage {
       description: insertAction.description ?? null,
       goalId: insertAction.goalId,
       xpReward: insertAction.xpReward ?? 15,
+      personalReward: insertAction.personalReward ?? null,
       dueDate: insertAction.dueDate ? (typeof insertAction.dueDate === 'string' ? new Date(insertAction.dueDate) : insertAction.dueDate) : null,
       isCompleted: false,
       completedAt: null,
+      feeling: null,
+      reflection: null,
+      difficulty: null,
+      satisfaction: null,
+      reflectedAt: null,
       createdAt: new Date(),
     };
     this.actions.set(id, action);
@@ -136,6 +152,41 @@ export class MemStorage implements IStorage {
     };
     this.achievements.set(id, achievement);
     return achievement;
+  }
+
+  // Daily Habits
+  async getDailyHabit(date: string): Promise<DailyHabit | undefined> {
+    return this.dailyHabits.get(date);
+  }
+
+  async getDailyHabits(startDate: string, endDate: string): Promise<DailyHabit[]> {
+    return Array.from(this.dailyHabits.values()).filter(habit => 
+      habit.date >= startDate && habit.date <= endDate
+    );
+  }
+
+  async createDailyHabit(insertHabit: InsertDailyHabit): Promise<DailyHabit> {
+    const id = this.currentDailyHabitId++;
+    const habit: DailyHabit = {
+      id,
+      date: insertHabit.date,
+      eatHealthy: insertHabit.eatHealthy ?? false,
+      exercise: insertHabit.exercise ?? false,
+      sleepBefore11pm: insertHabit.sleepBefore11pm ?? false,
+      notes: insertHabit.notes ?? null,
+      createdAt: new Date(),
+    };
+    this.dailyHabits.set(insertHabit.date, habit);
+    return habit;
+  }
+
+  async updateDailyHabit(date: string, updates: Partial<DailyHabit>): Promise<DailyHabit | undefined> {
+    const habit = this.dailyHabits.get(date);
+    if (!habit) return undefined;
+    
+    const updatedHabit = { ...habit, ...updates };
+    this.dailyHabits.set(date, updatedHabit);
+    return updatedHabit;
   }
 }
 
