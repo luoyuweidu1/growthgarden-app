@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { insertGoalSchema, insertActionSchema, insertAchievementSchema, insertDailyHabitSchema } from "@shared/schema";
 import { z } from "zod";
@@ -477,11 +478,12 @@ async function callOpenAI(prompt: string, systemMessage: string = "") {
   }
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: express.Express): Promise<Server> {
   const storage = app.locals.storage;
+  const router = express.Router();
 
 
-  app.get("/api/health", (_req, res) => {
+  router.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok", message: "API is healthy" });
   });
   
@@ -1009,7 +1011,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Failed to check tree health" });
     }
-  });
+  }
+);
+app.use("/api", router);
 
   const httpServer = createServer(app);
   return httpServer;

@@ -14,6 +14,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Basic health check endpoint
+app.get("/", (_req, res) => {
+  res.status(200).json({ 
+    status: "ok", 
+    message: "Growth Garden API is running!",
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get("/api/health", (_req, res) => {
   res.status(200).json({ status: "ok", message: "API is healthy" });
 });
@@ -50,41 +58,47 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize storage based on environment
-  let storage;
-  if (process.env.NODE_ENV === 'production') {
-    const { SupabaseStorage } = await import('./supabase-storage');
-    storage = new SupabaseStorage();
-  } else {
-    const { MemStorage } = await import('./storage');
-    storage = new MemStorage();
-  }
+  try {
+    // Initialize storage based on environment
+    let storage;
+    if (process.env.NODE_ENV === 'production') {
+      const { SupabaseStorage } = await import('./supabase-storage');
+      storage = new SupabaseStorage();
+    } else {
+      const { MemStorage } = await import('./storage');
+      storage = new MemStorage();
+    }
 
-  app.locals.storage = storage;
+    app.locals.storage = storage;
 
-  const server = await registerRoutes(app);
+    const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-    throw err;
-  });
-
-  // Serve frontend only in production
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-
-    // Optional: fallback for SPA routes (for deep-link support)
-    app.get("*", (_req, res) => {
-      res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+      console.error(err);
     });
-  }
 
-  const port = process.env.PORT || 3000;
-  server.listen(port, () => {
-    log(`✅ Server listening on port ${port}`);
-  });
+    // Serve frontend only in production
+    if (process.env.NODE_ENV === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+
+      // Optional: fallback for SPA routes (for deep-link support)
+      app.get("*", (_req, res) => {
+        res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+      });
+    }
+
+    const port = process.env.PORT || 3000;
+    server.listen(port, "0.0.0.0", () => {
+      log(`✅ Server listening on port ${port}`);
+      console.log(`🚀 Growth Garden API running at http://localhost:${port}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
 })();
