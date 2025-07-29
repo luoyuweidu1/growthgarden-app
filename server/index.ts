@@ -2,14 +2,23 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
+import cors from "cors";
+import path from "path";
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+app.use(cors()); // Allow all origins — adjust if needed
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Basic health check endpoint
+app.get("/api/health", (_req, res) => {
+  res.status(200).json({ status: "ok", message: "API is healthy" });
+});
+
+// Request logging
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -50,32 +59,32 @@ app.use((req, res, next) => {
     const { MemStorage } = await import('./storage');
     storage = new MemStorage();
   }
-  
-  // Make storage available to routes
+
   app.locals.storage = storage;
-  
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Serve frontend only in production
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
+
+    // Optional: fallback for SPA routes (for deep-link support)
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+    });
   }
 
-  // Temporarily using port 3000 to avoid conflicts
-  const port = 3000;
+  const port = process.env.PORT || 3000;
   server.listen(port, () => {
-    log(`serving on port ${port}`);
+    log(`✅ Server listening on port ${port}`);
   });
 })();
