@@ -479,6 +479,11 @@ async function callOpenAI(prompt: string, systemMessage: string = "") {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const storage = app.locals.storage;
+
+
+  app.get("/api/health", (_req, res) => {
+    res.status(200).json({ status: "ok", message: "API is healthy" });
+  });
   
   // Goals routes
   app.get("/api/goals", async (req, res) => {
