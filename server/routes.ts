@@ -3,6 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { insertGoalSchema, insertActionSchema, insertAchievementSchema, insertDailyHabitSchema } from "@shared/schema";
 import { z } from "zod";
+import { authenticateUser } from "./auth.js";
 
 // Helper functions for weekly reflection report
 function getFeelingEmoji(feeling: string): string {
@@ -482,13 +483,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   const storage = app.locals.storage;
   const router = express.Router();
 
-
   router.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok", message: "API is healthy" });
   });
   
-  // Goals routes
-  app.get("/api/goals", async (req, res) => {
+  // Goals routes - require authentication
+  app.get("/api/goals", authenticateUser, async (req, res) => {
     try {
       const goals = await storage.getGoals();
       res.json(goals);
@@ -497,7 +497,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.get("/api/goals/:id", async (req, res) => {
+  app.get("/api/goals/:id", authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const goal = await storage.getGoal(id);
@@ -510,7 +510,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.post("/api/goals", async (req, res) => {
+  app.post("/api/goals", authenticateUser, async (req, res) => {
     try {
       const goalData = insertGoalSchema.parse(req.body);
       const goal = await storage.createGoal(goalData);
@@ -527,7 +527,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/goals/:id", async (req, res) => {
+  app.patch("/api/goals/:id", authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
@@ -541,7 +541,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/goals/:id", async (req, res) => {
+  app.delete("/api/goals/:id", authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteGoal(id);
@@ -554,8 +554,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Actions routes
-  app.get("/api/actions", async (req, res) => {
+  // Actions routes - require authentication
+  app.get("/api/actions", authenticateUser, async (req, res) => {
     try {
       const actions = await storage.getAllActions();
       res.json(actions);
@@ -564,7 +564,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.get("/api/goals/:goalId/actions", async (req, res) => {
+  app.get("/api/goals/:goalId/actions", authenticateUser, async (req, res) => {
     try {
       const goalId = parseInt(req.params.goalId);
       const actions = await storage.getActionsByGoal(goalId);
@@ -574,7 +574,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.post("/api/actions", async (req, res) => {
+  app.post("/api/actions", authenticateUser, async (req, res) => {
     try {
       console.log("Received action data:", req.body);
       const actionData = insertActionSchema.parse(req.body);
@@ -591,7 +591,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/actions/:id/complete", async (req, res) => {
+  app.patch("/api/actions/:id/complete", authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const action = await storage.getAction(id);
@@ -627,7 +627,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/actions/:id/reflection", async (req, res) => {
+  app.patch("/api/actions/:id/reflection", authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const action = await storage.getAction(id);
@@ -651,7 +651,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/actions/:id", async (req, res) => {
+  app.delete("/api/actions/:id", authenticateUser, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteAction(id);
@@ -665,7 +665,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   });
 
   // Achievements routes
-  app.get("/api/achievements", async (req, res) => {
+  app.get("/api/achievements", authenticateUser, async (req, res) => {
     try {
       const achievements = await storage.getAchievements();
       res.json(achievements);
@@ -688,7 +688,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   });
 
   // Manual achievement check endpoint
-  app.post("/api/achievements/check", async (req, res) => {
+  app.post("/api/achievements/check", authenticateUser, async (req, res) => {
     try {
       await checkAndCreateAchievements(storage);
       res.json({ message: "Achievements checked", achievements: await storage.getAchievements() });
@@ -698,7 +698,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   });
 
   // Daily Habits routes
-  app.get("/api/daily-habits/:date", async (req, res) => {
+  app.get("/api/daily-habits/:date", authenticateUser, async (req, res) => {
     try {
       const { date } = req.params;
       const habit = await storage.getDailyHabit(date);
@@ -721,7 +721,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.post("/api/daily-habits", async (req, res) => {
+  app.post("/api/daily-habits", authenticateUser, async (req, res) => {
     try {
       const habitData = insertDailyHabitSchema.parse(req.body);
       const habit = await storage.createDailyHabit(habitData);
