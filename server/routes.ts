@@ -512,7 +512,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.post("/api/goals", authenticateUser, async (req, res) => {
     try {
-      const goalData = insertGoalSchema.parse(req.body);
+      const goalData = insertGoalSchema.parse({
+        ...req.body,
+        userId: (req as any).userId
+      });
       const goal = await storage.createGoal(goalData);
       
       // Check for achievements to unlock
@@ -577,7 +580,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   app.post("/api/actions", authenticateUser, async (req, res) => {
     try {
       console.log("Received action data:", req.body);
-      const actionData = insertActionSchema.parse(req.body);
+      const actionData = insertActionSchema.parse({
+        ...req.body,
+        userId: (req as any).userId
+      });
       console.log("Parsed action data:", actionData);
       const action = await storage.createAction(actionData);
       res.status(201).json(action);
@@ -723,7 +729,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.post("/api/daily-habits", authenticateUser, async (req, res) => {
     try {
-      const habitData = insertDailyHabitSchema.parse(req.body);
+      const habitData = insertDailyHabitSchema.parse({
+        ...req.body,
+        userId: (req as any).userId
+      });
       const habit = await storage.createDailyHabit(habitData);
       res.status(201).json(habit);
     } catch (error) {
