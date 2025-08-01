@@ -5,6 +5,27 @@ function getApiBaseUrl(): string {
   return import.meta.env.VITE_API_URL || window.location.origin;
 }
 
+// Get auth token from Supabase
+async function getAuthToken(): Promise<string | null> {
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase environment variables not found');
+      return null;
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    return null;
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -20,9 +41,20 @@ export async function apiRequest(
   // If URL starts with /, prepend the API base URL
   const fullUrl = url.startsWith('/') ? `${getApiBaseUrl()}${url}` : url;
   
+  // Get auth token
+  const token = await getAuthToken();
+  
+  const headers: Record<string, string> = {};
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  
   const res = await fetch(fullUrl, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -41,7 +73,16 @@ export const getQueryFn: <T>(options: {
     // If URL starts with /, prepend the API base URL
     const fullUrl = url.startsWith('/') ? `${getApiBaseUrl()}${url}` : url;
     
+    // Get auth token
+    const token = await getAuthToken();
+    
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
     const res = await fetch(fullUrl, {
+      headers,
       credentials: "include",
     });
 
