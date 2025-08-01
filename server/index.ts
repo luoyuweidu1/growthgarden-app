@@ -17,12 +17,28 @@ async function startServer() {
   // Parse JSON bodies
   app.use(express.json());
 
+  // Root route for debugging
+  app.get("/", (_req, res) => {
+    res.json({ 
+      message: "Growth Garden API is running!",
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || "development",
+      endpoints: [
+        "/api/health",
+        "/api/goals",
+        "/api/actions", 
+        "/api/achievements",
+        "/api/daily-habits"
+      ]
+    });
+  });
+
   // Register all API routes
   await registerRoutes(app);
 
   // Health check endpoint
   app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok" });
+    res.json({ status: "ok", message: "API is healthy" });
   });
 
   const port = parseInt(process.env.PORT || "3000", 10);
