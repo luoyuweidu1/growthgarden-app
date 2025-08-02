@@ -14,6 +14,8 @@ interface ActionReflectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   action: Action;
+  onComplete: () => void;
+  onSkip: () => void;
 }
 
 const feelingEmojis = [
@@ -31,7 +33,7 @@ const feelingEmojis = [
   { emoji: "🤗", label: "Proud", value: "Proud" },
 ];
 
-export function ActionReflectionModal({ isOpen, onClose, action }: ActionReflectionModalProps) {
+export function ActionReflectionModal({ isOpen, onClose, action, onComplete, onSkip }: ActionReflectionModalProps) {
   const [formData, setFormData] = useState({
     feeling: '',
     reflection: '',
@@ -53,7 +55,7 @@ export function ActionReflectionModal({ isOpen, onClose, action }: ActionReflect
         title: "Reflection saved!",
         description: "Your thoughts have been recorded for future reference.",
       });
-      onClose();
+      onComplete();
     },
     onError: (error) => {
       toast({
@@ -79,7 +81,7 @@ export function ActionReflectionModal({ isOpen, onClose, action }: ActionReflect
   };
 
   const handleSkip = () => {
-    onClose();
+    onSkip();
   };
 
   const handleEmojiSelect = (emojiData: { emoji: string; label: string; value: string }) => {

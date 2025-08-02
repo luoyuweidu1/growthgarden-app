@@ -30,8 +30,6 @@ export function ActionItem({ action }: ActionItemProps) {
         title: "Action completed!",
         description: `You earned ${action.xpReward} XP and watered your tree.`,
       });
-      // Open reflection modal after completion
-      setIsReflectionModalOpen(true);
     },
     onError: (error) => {
       toast({
@@ -41,6 +39,23 @@ export function ActionItem({ action }: ActionItemProps) {
       });
     },
   });
+
+  const handleStartAction = () => {
+    // Open reflection modal first, don't complete action yet
+    setIsReflectionModalOpen(true);
+  };
+
+  const handleReflectionComplete = () => {
+    // Complete the action after reflection is saved
+    completeMutation.mutate();
+    setIsReflectionModalOpen(false);
+  };
+
+  const handleReflectionSkip = () => {
+    // Complete the action when reflection is skipped
+    completeMutation.mutate();
+    setIsReflectionModalOpen(false);
+  };
 
   const getActionStatus = () => {
     if (action.isCompleted) return 'completed';
@@ -92,7 +107,7 @@ export function ActionItem({ action }: ActionItemProps) {
         <Button
           onClick={(e) => {
             e.stopPropagation();
-            completeMutation.mutate();
+            handleStartAction();
           }}
           disabled={completeMutation.isPending}
           className="organic-shape px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-medium shadow-lg transition-all duration-300"
@@ -107,7 +122,7 @@ export function ActionItem({ action }: ActionItemProps) {
       <Button
         onClick={(e) => {
           e.stopPropagation();
-          completeMutation.mutate();
+          handleStartAction();
         }}
         disabled={completeMutation.isPending}
         className="organic-shape px-4 py-2 bg-gradient-to-r from-sage-500 to-moss-500 hover:from-sage-600 hover:to-moss-600 text-white text-sm font-medium shadow-lg transition-all duration-300"
@@ -170,6 +185,8 @@ export function ActionItem({ action }: ActionItemProps) {
         isOpen={isReflectionModalOpen}
         onClose={() => setIsReflectionModalOpen(false)}
         action={action}
+        onComplete={handleReflectionComplete}
+        onSkip={handleReflectionSkip}
       />
     </>
   );
