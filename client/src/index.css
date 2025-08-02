@@ -158,6 +158,7 @@
   }
 
   .fluid-gradient {
+    /* Updated to light yellow gradient - 2025-01-02 */
     background: linear-gradient(135deg, 
       rgba(255, 255, 224, 0.1) 0%, 
       rgba(255, 248, 220, 0.3) 25%, 
