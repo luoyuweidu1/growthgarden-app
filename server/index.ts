@@ -1,16 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes.js";
 import { storage } from "./storage.js";
 
 dotenv.config();
-
-// Get __dirname equivalent for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
@@ -26,10 +20,6 @@ async function startServer() {
 
   // Parse JSON bodies
   app.use(express.json());
-
-  // Serve static files from the built frontend
-  const distPath = path.resolve(__dirname, "..", "dist", "public");
-  app.use(express.static(distPath));
 
   // API routes
   app.get("/api", (_req, res) => {
@@ -55,15 +45,10 @@ async function startServer() {
     res.json({ status: "ok", message: "API is healthy" });
   });
 
-  // Serve the SPA for all non-API routes
-  app.get("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
-
   const port = parseInt(process.env.PORT || "3000", 10);
   app.listen(port, "0.0.0.0", () => {
     console.log(`✅ Server listening on port ${port}`);
-    console.log(`🌐 Frontend available at http://localhost:${port}`);
+    console.log(`🌐 API available at http://localhost:${port}/api`);
   });
 }
 
