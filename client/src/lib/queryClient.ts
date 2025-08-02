@@ -12,6 +12,11 @@ async function getAuthToken(): Promise<string | null> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
+    console.log('🔍 Debug - Environment variables:', {
+      supabaseUrl: !!supabaseUrl,
+      supabaseAnonKey: !!supabaseAnonKey
+    });
+    
     if (!supabaseUrl || !supabaseAnonKey) {
       console.warn('Supabase environment variables not found');
       return null;
@@ -19,6 +24,13 @@ async function getAuthToken(): Promise<string | null> {
     
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data: { session } } = await supabase.auth.getSession();
+    
+    console.log('🔍 Debug - Session:', {
+      hasSession: !!session,
+      hasAccessToken: !!session?.access_token,
+      tokenLength: session?.access_token?.length
+    });
+    
     return session?.access_token || null;
   } catch (error) {
     console.error('Error getting auth token:', error);
@@ -44,12 +56,22 @@ export async function apiRequest(
   // Get auth token
   const token = await getAuthToken();
   
+  console.log('🔍 Debug - API Request:', {
+    url: fullUrl,
+    method,
+    hasToken: !!token,
+    tokenLength: token?.length
+  });
+  
   const headers: Record<string, string> = {};
   if (data) {
     headers["Content-Type"] = "application/json";
   }
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+    console.log('🔍 Debug - Added Authorization header');
+  } else {
+    console.log('🔍 Debug - No token available, skipping Authorization header');
   }
   
   const res = await fetch(fullUrl, {
