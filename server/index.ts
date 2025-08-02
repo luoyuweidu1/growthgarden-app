@@ -2,10 +2,15 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
+import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes.js";
 import { storage } from "./storage.js";
 
 dotenv.config();
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
@@ -23,7 +28,7 @@ async function startServer() {
   app.use(express.json());
 
   // Serve static files from the built frontend
-  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+  const distPath = path.resolve(__dirname, "..", "dist", "public");
   app.use(express.static(distPath));
 
   // API routes
