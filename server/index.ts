@@ -1,12 +1,17 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path";
 import { registerRoutes } from "./routes.js";
+import { storage } from "./storage.js";
 
 dotenv.config();
 
 async function startServer() {
   const app = express();
+
+  // Initialize storage
+  app.locals.storage = storage;
 
   // Enable CORS for frontend
   app.use(cors({
@@ -17,8 +22,12 @@ async function startServer() {
   // Parse JSON bodies
   app.use(express.json());
 
-  // Root route for debugging
-  app.get("/", (_req, res) => {
+  // Serve static files from the built frontend
+  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+  app.use(express.static(distPath));
+
+  // API routes
+  app.get("/api", (_req, res) => {
     res.json({ 
       message: "Growth Garden API is running!",
       timestamp: new Date().toISOString(),
@@ -41,9 +50,15 @@ async function startServer() {
     res.json({ status: "ok", message: "API is healthy" });
   });
 
+  // Serve the SPA for all non-API routes
+  app.get("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
+  });
+
   const port = parseInt(process.env.PORT || "3000", 10);
   app.listen(port, "0.0.0.0", () => {
     console.log(`✅ Server listening on port ${port}`);
+    console.log(`🌐 Frontend available at http://localhost:${port}`);
   });
 }
 
