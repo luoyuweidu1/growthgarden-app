@@ -704,16 +704,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   });
 
   // Daily Habits routes
-  app.get("/api/daily-habits/:date", authenticateUser, async (req, res) => {
-    try {
-      const { date } = req.params;
-      const habit = await storage.getDailyHabit(date);
-      res.json(habit || null);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch daily habit" });
-    }
-  });
-
   app.get("/api/daily-habits", authenticateUser, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
@@ -740,6 +730,16 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid habit data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create daily habit" });
+    }
+  });
+
+  app.get("/api/daily-habits/:date", authenticateUser, async (req, res) => {
+    try {
+      const { date } = req.params;
+      const habit = await storage.getDailyHabit(date);
+      res.json(habit || null);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch daily habit" });
     }
   });
 
