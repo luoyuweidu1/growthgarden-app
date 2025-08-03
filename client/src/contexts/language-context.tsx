@@ -15,7 +15,11 @@ interface LanguageProviderProps {
 }
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>(() => {
+    // Try to get language from localStorage, default to 'en'
+    const savedLanguage = localStorage.getItem('growthgarden-language');
+    return (savedLanguage as Language) || 'en';
+  });
 
   const translations = {
     en: {
@@ -220,8 +224,13 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     return translations[language][key as keyof typeof translations[typeof language]] || key;
   };
 
+  const handleSetLanguage = (newLanguage: Language) => {
+    setLanguage(newLanguage);
+    localStorage.setItem('growthgarden-language', newLanguage);
+  };
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );

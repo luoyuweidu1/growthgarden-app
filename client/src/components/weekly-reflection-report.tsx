@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Sparkles, TrendingUp, Lightbulb, Calendar, ChevronRight, History } from "lucide-react";
 import type { Action } from "@shared/schema";
 import { HistoricalReports } from "./historical-reports";
+import { useLanguage } from "@/contexts/language-context";
 
 interface WeeklyReport {
   weekStart: string;
@@ -64,6 +65,7 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
   const [isHistoricalReportsOpen, setIsHistoricalReportsOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const generateReportMutation = useMutation({
     mutationFn: async () => {
@@ -72,7 +74,7 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: "Failed to generate weekly report. Please try again.",
         variant: "destructive",
       });
@@ -93,7 +95,7 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: "Failed to regenerate AI insights. Please try again.",
         variant: "destructive",
       });
@@ -124,13 +126,13 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-sage-800 flex items-center gap-2">
               <Sparkles className="text-primary" />
-              Weekly Reflection Report
+              {t('weeklyReport.title')}
             </DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-sage-600">Generating your personalized insights...</p>
+              <p className="text-sage-600">{t('weeklyReport.generating')}</p>
             </div>
           </div>
         </DialogContent>
@@ -144,7 +146,7 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-sage-800 flex items-center gap-2">
             <Sparkles className="text-primary" />
-            Weekly Reflection Report
+            {t('weeklyReport.title')}
           </DialogTitle>
           <div className="flex items-center justify-between">
             <p className="text-sage-600">
@@ -163,7 +165,7 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
                 className="organic-shape hover:bg-sage-100/50 transition-all duration-300"
               >
                 <History className="w-4 h-4 mr-2" />
-                View Historical Reports
+                {t('weeklyReport.viewHistorical')}
               </Button>
             )}
           </div>
@@ -172,16 +174,16 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
         {!report && (
           <div className="text-center py-12">
             <Sparkles className="w-16 h-16 text-primary mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-sage-800 mb-2">Generate Your Weekly Insights</h3>
+            <h3 className="text-xl font-semibold text-sage-800 mb-2">{t('weeklyReport.generate')}</h3>
             <p className="text-sage-600 mb-6">
-              Get AI-powered insights about your feelings, accomplishments, and learnings from the past week.
+              {t('weeklyReport.generateDescription')}
             </p>
             <Button
               onClick={handleGenerateReport}
               disabled={generateReportMutation.isPending}
               className="biomorphic-button"
             >
-              {generateReportMutation.isPending ? "Generating..." : "Generate Report"}
+              {generateReportMutation.isPending ? t('weeklyReport.generating') : t('weeklyReport.generateButton')}
             </Button>
           </div>
         )}
@@ -193,7 +195,7 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
               <CardHeader>
                 <CardTitle className="text-lg font-semibold text-sage-800 flex items-center gap-2">
                   <TrendingUp className="text-primary" />
-                  Feeling Distribution
+                  {t('weeklyReport.feelingDistribution')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -219,27 +221,27 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
               <CardHeader>
                 <CardTitle className="text-lg font-semibold text-sage-800 flex items-center gap-2">
                   <Sparkles className="text-primary" />
-                  Accomplishment Celebration
+                  {t('weeklyReport.accomplishmentCelebration')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div className="text-center p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg">
                     <div className="text-2xl font-bold text-primary">{report.accomplishments.totalActions}</div>
-                    <div className="text-sm text-sage-600">Actions Completed</div>
+                    <div className="text-sm text-sage-600">{t('weeklyReport.actionsCompleted')}</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-moss-500/10 to-moss-500/5 rounded-lg">
                     <div className="text-2xl font-bold text-moss-600">{report.accomplishments.totalXP}</div>
-                    <div className="text-sm text-sage-600">XP Earned</div>
+                    <div className="text-sm text-sage-600">{t('weeklyReport.xpEarned')}</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-clay-500/10 to-clay-500/5 rounded-lg">
                     <div className="text-2xl font-bold text-clay-600">{report.accomplishments.streak}</div>
-                    <div className="text-sm text-sage-600">Day Streak</div>
+                    <div className="text-sm text-sage-600">{t('weeklyReport.dayStreak')}</div>
                   </div>
                 </div>
                 {report.accomplishments.story && (
                   <div className="mt-6">
-                    <h4 className="font-medium text-sage-800 mb-3">Your Week's Story:</h4>
+                    <h4 className="font-medium text-sage-800 mb-3">{t('weeklyReport.yourWeeksStory')}</h4>
                     <div className="bg-gradient-to-r from-primary/5 to-moss-500/5 p-4 rounded-lg border border-primary/10">
                       <p className="text-sage-700 leading-relaxed text-sm">
                         {report.accomplishments.story}
@@ -250,7 +252,7 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
                 
                 {report.accomplishments.achievements.length > 0 && (
                   <div className="mt-4">
-                    <h4 className="font-medium text-sage-800 mb-2">Achievements Unlocked:</h4>
+                    <h4 className="font-medium text-sage-800 mb-2">{t('weeklyReport.achievementsUnlocked')}:</h4>
                     <div className="flex flex-wrap gap-2">
                       {report.accomplishments.achievements.map((achievement, index) => (
                         <Badge key={index} variant="secondary" className="biomorphic-button">
@@ -268,7 +270,7 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
               <CardHeader>
                 <CardTitle className="text-lg font-semibold text-sage-800 flex items-center gap-2">
                   <Lightbulb className="text-primary" />
-                  Learning Summary
+                  {t('weeklyReport.learningSummary')}
                   <Button
                     onClick={handleRegenerateInsights}
                     disabled={regenerateInsightsMutation.isPending}
@@ -276,14 +278,14 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
                     size="sm"
                     className="ml-auto organic-shape hover:bg-sage-100/50 transition-all duration-300"
                   >
-                    {regenerateInsightsMutation.isPending ? "Regenerating..." : "🔄 Regenerate AI Insights"}
+                    {regenerateInsightsMutation.isPending ? t('weeklyReport.regenerating') : t('weeklyReport.regenerateAI')}
                   </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {report.learningSummary.insights.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-sage-800 mb-2">Key Insights:</h4>
+                    <h4 className="font-medium text-sage-800 mb-2">{t('weeklyReport.keyInsights')}:</h4>
                     <ul className="space-y-1">
                       {report.learningSummary.insights.map((insight, index) => (
                         <li key={index} className="text-sm text-sage-600 flex items-start gap-2">
