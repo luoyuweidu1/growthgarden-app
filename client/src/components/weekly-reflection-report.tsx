@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, TrendingUp, Lightbulb, Calendar, ChevronRight } from "lucide-react";
+import { Sparkles, TrendingUp, Lightbulb, Calendar, ChevronRight, History } from "lucide-react";
 import type { Action } from "@shared/schema";
+import { HistoricalReports } from "./historical-reports";
 
 interface WeeklyReport {
   weekStart: string;
@@ -60,6 +61,7 @@ const feelingEmojis: Record<string, string> = {
 
 export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionReportProps) {
   const [selectedFeeling, setSelectedFeeling] = useState<string | null>(null);
+  const [isHistoricalReportsOpen, setIsHistoricalReportsOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -144,14 +146,27 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
             <Sparkles className="text-primary" />
             Weekly Reflection Report
           </DialogTitle>
-          <p className="text-sage-600">
-            {report?.weekStart && report?.weekEnd && (
-              <>
-                <Calendar className="inline w-4 h-4 mr-1" />
-                {new Date(report.weekStart).toLocaleDateString()} - {new Date(report.weekEnd).toLocaleDateString()}
-              </>
+          <div className="flex items-center justify-between">
+            <p className="text-sage-600">
+              {report?.weekStart && report?.weekEnd && (
+                <>
+                  <Calendar className="inline w-4 h-4 mr-1" />
+                  {new Date(report.weekStart).toLocaleDateString()} - {new Date(report.weekEnd).toLocaleDateString()}
+                </>
+              )}
+            </p>
+            {report && (
+              <Button
+                onClick={() => setIsHistoricalReportsOpen(true)}
+                variant="ghost"
+                size="sm"
+                className="organic-shape hover:bg-sage-100/50 transition-all duration-300"
+              >
+                <History className="w-4 h-4 mr-2" />
+                View Historical Reports
+              </Button>
             )}
-          </p>
+          </div>
         </DialogHeader>
 
         {!report && (
@@ -350,6 +365,12 @@ export function WeeklyReflectionReport({ isOpen, onClose }: WeeklyReflectionRepo
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Historical Reports Modal */}
+        <HistoricalReports
+          isOpen={isHistoricalReportsOpen}
+          onClose={() => setIsHistoricalReportsOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );

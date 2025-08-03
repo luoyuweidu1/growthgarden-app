@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sprout, Plus, Download, User, Check, Sparkles, LogOut } from "lucide-react";
+import { Sprout, Plus, Download, User, Check, Sparkles, LogOut, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GoalCreationModal } from "@/components/goal-creation-modal";
@@ -10,6 +10,7 @@ import { GoalTreeCard } from "@/components/goal-tree-card";
 import { StatsCard } from "@/components/stats-card";
 import { ActionItem } from "@/components/action-item";
 import { WeeklyReflectionReport } from "@/components/weekly-reflection-report";
+import { HistoricalReports } from "@/components/historical-reports";
 import { DailyHabitsCheckin } from "@/components/daily-habits-checkin";
 import { apiRequest } from "@/lib/queryClient";
 import type { Goal, Action, Achievement } from "@shared/schema";
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isWeeklyReportOpen, setIsWeeklyReportOpen] = useState(false);
+  const [isHistoricalReportsOpen, setIsHistoricalReportsOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const { signOut } = useAuth();
@@ -131,6 +133,14 @@ export default function Dashboard() {
                 >
                   <Sparkles className="w-4 h-4 mr-2 text-primary" />
                   <span className="text-primary font-medium">Weekly Report</span>
+                </Button>
+                <Button
+                  onClick={() => setIsHistoricalReportsOpen(true)}
+                  variant="ghost"
+                  className="organic-shape hover:bg-sage-100/50 transition-all duration-300"
+                >
+                  <History className="w-4 h-4 mr-2" />
+                  <span className="font-medium">Historical Reports</span>
                 </Button>
                 <Button
                   onClick={handleLogout}
@@ -429,6 +439,11 @@ export default function Dashboard() {
       <WeeklyReflectionReport
         isOpen={isWeeklyReportOpen}
         onClose={() => setIsWeeklyReportOpen(false)}
+      />
+
+      <HistoricalReports
+        isOpen={isHistoricalReportsOpen}
+        onClose={() => setIsHistoricalReportsOpen(false)}
       />
     </div>
   );

@@ -1002,6 +1002,155 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
+  // Historical reports endpoints
+  app.get("/api/reports/historical", authenticateUser, async (req, res) => {
+    try {
+      const { weeks = "8" } = req.query; // Default to last 8 weeks
+      const weeksBack = parseInt(weeks as string);
+      
+      const reports = [];
+      const now = new Date();
+      
+      for (let i = 0; i < weeksBack; i++) {
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - (now.getDay() + (i * 7)));
+        weekStart.setHours(0, 0, 0, 0);
+        
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        const allActions = await storage.getAllActions();
+        const weeklyActions = allActions.filter((action: any) => 
+          action.isCompleted && 
+          action.reflectedAt && 
+          new Date(action.reflectedAt) >= weekStart && 
+          new Date(action.reflectedAt) <= weekEnd
+        );
+
+        if (weeklyActions.length > 0) {
+          // Calculate feeling distribution
+          const feelingCounts: Record<string, { count: number; actions: string[] }> = {};
+          weeklyActions.forEach((action: any) => {
+            if (action.feeling) {
+              if (!feelingCounts[action.feeling]) {
+                feelingCounts[action.feeling] = { count: 0, actions: [] };
+              }
+              feelingCounts[action.feeling].count++;
+              feelingCounts[action.feeling].actions.push(action.title);
+            }
+          });
+
+          const totalReflections = weeklyActions.length;
+          const feelingDistribution = Object.entries(feelingCounts).map(([feeling, data]) => ({
+            feeling,
+            emoji: getFeelingEmoji(feeling),
+            count: data.count,
+            percentage: Math.round((data.count / totalReflections) * 100),
+            actions: data.actions
+          }));
+
+          const totalXP = weeklyActions.reduce((sum: number, action: any) => sum + action.xpReward, 0);
+          const achievements = await storage.getAchievements();
+          const streak = Math.min(7, weeklyActions.length);
+
+          const aiAnalysis = await generateAIAnalysis(weeklyActions, feelingDistribution);
+          const learningSummary = await generateLearningSummary(weeklyActions, feelingDistribution);
+          const achievementStory = await generateAchievementStory(weeklyActions, achievements, totalXP, streak);
+
+          reports.push({
+            weekStart: weekStart.toISOString(),
+            weekEnd: weekEnd.toISOString(),
+            feelingDistribution,
+            accomplishments: {
+              totalActions: weeklyActions.length,
+              totalXP,
+              achievements: achievements.map(a => a.title),
+              streak,
+              story: achievementStory
+            },
+            learningSummary,
+            aiAnalysis
+          });
+        }
+      }
+
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch historical reports" });
+    }
+  });
+
+  app.get("/api/reports/historical/:weekStart", authenticateUser, async (req, res) => {
+    try {
+      const { weekStart } = req.params;
+      const startDate = new Date(weekStart);
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6);
+      endDate.setHours(23, 59, 59, 999);
+
+      const allActions = await storage.getAllActions();
+      const weeklyActions = allActions.filter((action: any) => 
+        action.isCompleted && 
+        action.reflectedAt && 
+        new Date(action.reflectedAt) >= startDate && 
+        new Date(action.reflectedAt) <= endDate
+      );
+
+      if (weeklyActions.length === 0) {
+        return res.status(404).json({ error: "No data available for this week" });
+      }
+
+      // Calculate feeling distribution
+      const feelingCounts: Record<string, { count: number; actions: string[] }> = {};
+      weeklyActions.forEach((action: any) => {
+        if (action.feeling) {
+          if (!feelingCounts[action.feeling]) {
+            feelingCounts[action.feeling] = { count: 0, actions: [] };
+          }
+          feelingCounts[action.feeling].count++;
+          feelingCounts[action.feeling].actions.push(action.title);
+        }
+      });
+
+      const totalReflections = weeklyActions.length;
+      const feelingDistribution = Object.entries(feelingCounts).map(([feeling, data]) => ({
+        feeling,
+        emoji: getFeelingEmoji(feeling),
+        count: data.count,
+        percentage: Math.round((data.count / totalReflections) * 100),
+        actions: data.actions
+      }));
+
+      const totalXP = weeklyActions.reduce((sum: number, action: any) => sum + action.xpReward, 0);
+      const achievements = await storage.getAchievements();
+      const streak = Math.min(7, weeklyActions.length);
+
+      const aiAnalysis = await generateAIAnalysis(weeklyActions, feelingDistribution);
+      const learningSummary = await generateLearningSummary(weeklyActions, feelingDistribution);
+      const achievementStory = await generateAchievementStory(weeklyActions, achievements, totalXP, streak);
+
+      const report = {
+        weekStart: startDate.toISOString(),
+        weekEnd: endDate.toISOString(),
+        feelingDistribution,
+        accomplishments: {
+          totalActions: weeklyActions.length,
+          totalXP,
+          achievements: achievements.map(a => a.title),
+          streak,
+          story: achievementStory
+        },
+        learningSummary,
+        aiAnalysis
+      };
+
+      res.json(report);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch historical report" });
+    }
+  });
+
   // Health check for withering trees
   app.post("/api/goals/check-health", async (req, res) => {
     try {
