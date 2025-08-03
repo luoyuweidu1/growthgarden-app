@@ -166,6 +166,14 @@
       rgba(255, 248, 230, 0.15) 75%, 
       rgba(255, 252, 240, 0.08) 100%);
   }
+
+  /* Force rebuild - new class */
+  .yellow-background-force {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 0, 0.1) 0%, 
+      rgba(255, 248, 0, 0.2) 50%, 
+      rgba(255, 240, 0, 0.1) 100%);
+  }
 }
 
 @layer utilities {
