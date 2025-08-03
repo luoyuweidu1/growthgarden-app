@@ -157,21 +157,19 @@ export function DailyHabitsCheckin({ date }: DailyHabitsCheckinProps) {
             {/* Action buttons */}
             <div className="flex items-center justify-between pt-2">
               {isAllCompleted && (
-                <div className="flex items-center gap-2 text-primary flex-1 justify-center">
+                <div className="flex items-center gap-2 text-primary">
                   <CheckCircle size={16} />
                   <span className="text-sm font-medium">Perfect foundation! 🌱</span>
                 </div>
               )}
               
-              {isEditing && (
-                <Button
-                  onClick={handleSave}
-                  disabled={saveHabitMutation.isPending}
-                  className="biomorphic-button mr-4"
-                >
-                  {saveHabitMutation.isPending ? "Saving..." : "Save Habits"}
-                </Button>
-              )}
+              <Button
+                onClick={handleSave}
+                disabled={saveHabitMutation.isPending}
+                className="biomorphic-button"
+              >
+                {saveHabitMutation.isPending ? "Saving..." : "Save Habits"}
+              </Button>
             </div>
 
 
