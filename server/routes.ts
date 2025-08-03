@@ -483,7 +483,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   const storage = app.locals.storage;
   const router = express.Router();
 
-  router.get("/health", (_req, res) => {
+  // Health check endpoint
+  app.get("/api/health", (_req, res) => {
     res.status(200).json({ status: "ok", message: "API is healthy" });
   });
 
