@@ -154,7 +154,7 @@ export default function Dashboard() {
         <div className="text-center mb-6">
           <div className="organic-shape bg-white/80 backdrop-blur-sm p-8 mb-4 inline-block">
             <h1 className="text-4xl font-bold text-sage-800 mb-3">Welcome to Growth Garden</h1>
-            <p className="text-sage-600 text-lg max-w-md mx-auto">Real-world growth, made simple.</p>
+            <p className="text-sage-600 text-lg max-w-md mx-auto">Planting a garden of your own — a place where your insight, creativity, and passion could take root and bloom</p>
           </div>
         </div>
 
