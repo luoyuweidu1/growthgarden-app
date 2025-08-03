@@ -2,7 +2,13 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 // Get API base URL from environment variable or default to current origin
 function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL || window.location.origin;
+  const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+  console.log('🔍 Debug - API Base URL:', {
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+    windowLocationOrigin: window.location.origin,
+    finalApiUrl: apiUrl
+  });
+  return apiUrl;
 }
 
 // Get auth token from Supabase
