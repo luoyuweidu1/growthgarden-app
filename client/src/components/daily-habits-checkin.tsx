@@ -156,12 +156,18 @@ export function DailyHabitsCheckin({ date }: DailyHabitsCheckinProps) {
 
             {/* Action buttons */}
             <div className="flex items-center justify-between pt-2">
-              {isAllCompleted && (
-                <div className="flex items-center gap-2 text-primary">
-                  <CheckCircle size={16} />
-                  <span className="text-sm font-medium">Perfect foundation! 🌱</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                {isAllCompleted ? (
+                  <>
+                    <CheckCircle size={16} className="text-primary" />
+                    <span className="text-sm font-medium text-primary">Perfect foundation! 🌱</span>
+                  </>
+                ) : (
+                  <span className="text-sm text-sage-600">
+                    {completedCount}/3 habits completed
+                  </span>
+                )}
+              </div>
               
               <Button
                 onClick={handleSave}
