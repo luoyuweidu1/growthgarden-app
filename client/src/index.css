@@ -158,13 +158,13 @@
   }
 
   .fluid-gradient {
-    /* Updated to light yellow gradient - 2025-01-02 */
+    /* Updated to light yellow gradient - 2025-01-02 - FORCE REBUILD */
     background: linear-gradient(135deg, 
-      rgba(255, 255, 224, 0.1) 0%, 
-      rgba(255, 248, 220, 0.3) 25%, 
-      rgba(255, 245, 238, 0.2) 50%, 
-      rgba(255, 250, 240, 0.1) 75%, 
-      rgba(255, 255, 240, 0.05) 100%);
+      rgba(255, 255, 200, 0.15) 0%, 
+      rgba(255, 250, 210, 0.35) 25%, 
+      rgba(255, 245, 220, 0.25) 50%, 
+      rgba(255, 248, 230, 0.15) 75%, 
+      rgba(255, 252, 240, 0.08) 100%);
   }
 }
 
