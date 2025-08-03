@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Sprout, Plus, Download, User, Check, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/language-context";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { GoalCreationModal } from "@/components/goal-creation-modal";
 import { ActionCreationModal } from "@/components/action-creation-modal";
 import { ExportModal } from "@/components/export-modal";
@@ -25,6 +27,7 @@ export default function Dashboard() {
 
   const queryClient = useQueryClient();
   const { signOut } = useAuth();
+  const { t } = useLanguage();
 
   const handleLogout = async () => {
     try {
@@ -113,17 +116,18 @@ export default function Dashboard() {
             
             <div className="flex items-center space-x-6">
               <div className="hidden md:flex items-center space-x-4">
-                <span className="text-sm text-sage-600">Daily Streak: <span className="font-semibold text-primary">7 days</span></span>
-                <span className="text-sm text-sage-600">Level: <span className="font-semibold text-primary">Gardener</span></span>
+                <span className="text-sm text-sage-600">{t('nav.dailyStreak')}: <span className="font-semibold text-primary">7 days</span></span>
+                <span className="text-sm text-sage-600">{t('nav.level')}: <span className="font-semibold text-primary">{t('nav.gardener')}</span></span>
               </div>
               <div className="flex items-center space-x-4">
+                <LanguageSwitcher />
                 <Button
                   onClick={() => setIsExportModalOpen(true)}
                   variant="ghost"
                   className="organic-shape hover:bg-sage-100/50 transition-all duration-300"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Export
+                  {t('nav.export')}
                 </Button>
                 <Button
                   onClick={() => setIsWeeklyReportOpen(true)}
@@ -131,7 +135,7 @@ export default function Dashboard() {
                   className="organic-shape hover:bg-sage-100/50 transition-all duration-300 border border-primary/20"
                 >
                   <Sparkles className="w-4 h-4 mr-2 text-primary" />
-                  <span className="text-primary font-medium">Weekly Report</span>
+                  <span className="text-primary font-medium">{t('nav.weeklyReport')}</span>
                 </Button>
                 <Button
                   onClick={handleLogout}
@@ -139,7 +143,7 @@ export default function Dashboard() {
                   className="organic-shape hover:bg-red-100/50 transition-all duration-300 text-red-600"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
+                  {t('nav.signOut')}
                 </Button>
               </div>
             </div>
@@ -153,33 +157,33 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="text-center mb-6">
           <div className="organic-shape bg-white/80 backdrop-blur-sm p-8 mb-4 inline-block">
-            <h1 className="text-4xl font-bold text-sage-800 mb-3">Welcome to Growth Garden</h1>
-            <p className="text-sage-600 text-lg max-w-md mx-auto">Planting a garden of your own — a place where your insight, creativity, and passion could take root and bloom</p>
+            <h1 className="text-4xl font-bold text-sage-800 mb-3">{t('welcome.title')}</h1>
+            <p className="text-sage-600 text-lg max-w-md mx-auto">{t('welcome.subtitle')}</p>
           </div>
         </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <StatsCard
-            title="Active Goals"
+            title={t('stats.activeGoals')}
             value={activeGoals}
             icon="seedling"
             color="forest"
           />
           <StatsCard
-            title="Completed Today"
+            title={t('stats.completedToday')}
             value={completedToday}
             icon="check"
             color="blue"
           />
           <StatsCard
-            title="Trees Mature"
+            title={t('stats.treesMature')}
             value={matureGoals}
             icon="tree"
             color="purple"
           />
           <StatsCard
-            title="Need Attention"
+            title={t('stats.needAttention')}
             value={goalsNeedingAttention}
             icon="alert"
             color="orange"
@@ -199,7 +203,7 @@ export default function Dashboard() {
             size="lg"
           >
             <Plus className="mr-2" size={18} />
-            Plant New Goal
+            {t('actions.plantGoal')}
           </Button>
           {goals.length > 0 && (
             <Button
@@ -209,7 +213,7 @@ export default function Dashboard() {
               size="lg"
             >
               <Plus className="mr-2" size={18} />
-              Add Action
+              {t('actions.createAction')}
             </Button>
           )}
         </div>
@@ -217,7 +221,7 @@ export default function Dashboard() {
         {/* Garden Grid */}
         <div className="biomorphic-card p-8 mb-8">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-semibold text-sage-800">Your Garden</h2>
+            <h2 className="text-2xl font-semibold text-sage-800">{t('goals.title')}</h2>
             <div className="flex items-center space-x-4">
               <Button 
                 variant="outline" 
@@ -226,7 +230,7 @@ export default function Dashboard() {
                 className="organic-shape px-4 py-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
               >
                 <Download size={16} className="mr-2" />
-                Export Progress
+                {t('nav.export')} Progress
               </Button>
               <Button variant="ghost" size="sm" className="organic-shape px-4 py-2 text-sage-500 hover:text-sage-700 transition-all duration-300">
                 Grid View
@@ -248,7 +252,7 @@ export default function Dashboard() {
                 <Plus className="text-sage-400" size={32} />
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-sage-600 text-sm">Plant New Goal</h3>
+                <h3 className="font-semibold text-sage-600 text-sm">{t('actions.plantGoal')}</h3>
                 <p className="text-xs text-sage-500 mt-1">Click to add</p>
               </div>
             </div>
@@ -257,11 +261,11 @@ export default function Dashboard() {
 
         {/* Today's Actions */}
         <div className="biomorphic-card p-8 mb-8">
-          <h2 className="text-2xl font-semibold text-sage-800 mb-6">Today's Actions</h2>
+          <h2 className="text-2xl font-semibold text-sage-800 mb-6">{t('actions.todaysActions')}</h2>
           
           <div className="space-y-4">
             {upcomingActions.length === 0 ? (
-              <p className="text-sage-500 text-center py-8">No actions scheduled for today</p>
+              <p className="text-sage-500 text-center py-8">{t('actions.noScheduled')}</p>
             ) : (
               upcomingActions.map((action) => (
                 <ActionItem key={action.id} action={action} />
@@ -334,7 +338,7 @@ export default function Dashboard() {
         {/* Recent Achievements & Actions */}
         <div className="biomorphic-card p-8 mt-8">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold text-sage-800">Recent Activity</h3>
+            <h3 className="text-xl font-semibold text-sage-800">{t('achievements.title')}</h3>
             <Button
               onClick={() => achievementCheckMutation.mutate()}
               disabled={achievementCheckMutation.isPending}
@@ -342,13 +346,13 @@ export default function Dashboard() {
               size="sm"
               className="organic-shape hover:bg-sage-100/50 transition-all duration-300"
             >
-              {achievementCheckMutation.isPending ? "Checking..." : "🔄 Check"}
+              {achievementCheckMutation.isPending ? t('goals.checking') : "🔄 " + t('goals.checkAchievements')}
             </Button>
           </div>
           
           <div className="space-y-4">
             {achievements.length === 0 && allActions.filter(action => action.isCompleted).length === 0 ? (
-              <p className="text-sage-500 text-center py-8">Complete your first action to see activity here!</p>
+              <p className="text-sage-500 text-center py-8">{t('achievements.noActivity')}</p>
             ) : (
               <>
                 {/* Show completed actions first */}
@@ -366,18 +370,18 @@ export default function Dashboard() {
                         <div className="flex-1">
                           <h4 className="font-semibold text-sage-800">{action.title}</h4>
                           <p className="text-sm text-sage-600">
-                            {goal?.name && `Goal: ${goal.name} • `}
-                            {action.completedAt && `Completed ${new Date(action.completedAt).toLocaleDateString()}`}
+                            {goal?.name && `${t('achievements.goal')}: ${goal.name} • `}
+                            {action.completedAt && `${t('achievements.completed')} ${new Date(action.completedAt).toLocaleDateString()}`}
                           </p>
                           {action.feeling && (
                             <p className="text-xs text-moss-600 mt-1">
-                              😊 Feeling: {action.feeling}
-                              {action.satisfaction && ` • Satisfaction: ${action.satisfaction}/5`}
+                              😊 {t('achievements.feeling')}: {action.feeling}
+                              {action.satisfaction && ` • ${t('achievements.satisfaction')}: ${action.satisfaction}/5`}
                             </p>
                           )}
                           {action.personalReward && (
                             <p className="text-xs text-moss-600 mt-1">
-                              🎁 Reward: {action.personalReward}
+                              🎁 {t('achievements.reward')}: {action.personalReward}
                             </p>
                           )}
                         </div>

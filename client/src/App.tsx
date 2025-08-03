@@ -7,6 +7,7 @@ import Dashboard from "@/pages/dashboard";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "./components/auth-provider";
 import { LandingPage } from "./components/landing-page";
+import { LanguageProvider } from "./contexts/language-context";
 
 function Router() {
   const { user, loading } = useAuth();
@@ -33,14 +34,16 @@ function Router() {
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

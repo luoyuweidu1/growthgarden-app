@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Apple, Dumbbell, Moon, CheckCircle, Circle } from "lucide-react";
 import type { DailyHabit } from "@shared/schema";
+import { useLanguage } from "@/contexts/language-context";
 
 interface DailyHabitsCheckinProps {
   date?: string; // Optional date, defaults to today
@@ -25,6 +26,7 @@ export function DailyHabitsCheckin({ date }: DailyHabitsCheckinProps) {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   // Use provided date or today's date
   const targetDate = date || new Date().toISOString().split('T')[0];
@@ -115,7 +117,7 @@ export function DailyHabitsCheckin({ date }: DailyHabitsCheckinProps) {
             <div className="grid grid-cols-3 gap-4">
               <div className="flex flex-col items-center p-4">
                 <Apple className="text-primary mb-3" size={24} />
-                <Label className="text-sm font-medium text-sage-800 text-center mb-3">Eat Healthy</Label>
+                <Label className="text-sm font-medium text-sage-800 text-center mb-3">{t('habits.eatHealthy')}</Label>
                 <Switch
                   checked={habits.eatHealthy}
                   onCheckedChange={() => handleHabitToggle('eatHealthy')}
@@ -124,7 +126,7 @@ export function DailyHabitsCheckin({ date }: DailyHabitsCheckinProps) {
 
               <div className="flex flex-col items-center p-4">
                 <Dumbbell className="text-primary mb-3" size={24} />
-                <Label className="text-sm font-medium text-sage-800 text-center mb-3">Exercise</Label>
+                <Label className="text-sm font-medium text-sage-800 text-center mb-3">{t('habits.exercise')}</Label>
                 <Switch
                   checked={habits.exercise}
                   onCheckedChange={() => handleHabitToggle('exercise')}
@@ -133,7 +135,7 @@ export function DailyHabitsCheckin({ date }: DailyHabitsCheckinProps) {
 
               <div className="flex flex-col items-center p-4">
                 <Moon className="text-primary mb-3" size={24} />
-                <Label className="text-sm font-medium text-sage-800 text-center mb-3">Sleep Before 11 PM</Label>
+                <Label className="text-sm font-medium text-sage-800 text-center mb-3">{t('habits.sleepBefore11pm')}</Label>
                 <Switch
                   checked={habits.sleepBefore11pm}
                   onCheckedChange={() => handleHabitToggle('sleepBefore11pm')}
@@ -149,7 +151,7 @@ export function DailyHabitsCheckin({ date }: DailyHabitsCheckinProps) {
                   setNotes(e.target.value);
                   setIsEditing(true);
                 }}
-                placeholder="How did you feel today? Any challenges or wins with your habits?"
+                placeholder={t('habits.notes')}
                 className="organic-shape border-sage-200 focus:border-primary transition-all duration-300 w-4/5"
               />
             </div>
@@ -160,11 +162,11 @@ export function DailyHabitsCheckin({ date }: DailyHabitsCheckinProps) {
                 {isAllCompleted ? (
                   <>
                     <CheckCircle size={16} className="text-primary" />
-                    <span className="text-sm font-medium text-primary">Perfect foundation! 🌱</span>
+                    <span className="text-sm font-medium text-primary">{t('habits.perfectFoundation')}</span>
                   </>
                 ) : (
                   <span className="text-sm text-sage-600">
-                    {completedCount}/3 habits completed
+                    {completedCount}/3 {t('habits.completed')}
                   </span>
                 )}
               </div>
@@ -174,7 +176,7 @@ export function DailyHabitsCheckin({ date }: DailyHabitsCheckinProps) {
                 disabled={saveHabitMutation.isPending}
                 className="biomorphic-button"
               >
-                {saveHabitMutation.isPending ? "Saving..." : "Save Habits"}
+                {saveHabitMutation.isPending ? t('habits.saving') : t('habits.save')}
               </Button>
             </div>
 
