@@ -486,6 +486,11 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   router.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok", message: "API is healthy" });
   });
+
+  // Test endpoint to verify routing is working
+  app.get("/api/test", (_req, res) => {
+    res.json({ message: "Test endpoint working", timestamp: new Date().toISOString() });
+  });
   
   // Goals routes - require authentication
   app.get("/api/goals", authenticateUser, async (req, res) => {

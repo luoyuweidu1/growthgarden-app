@@ -43,11 +43,6 @@ async function startServer() {
   // Register all API routes
   await registerRoutes(app);
 
-  // Health check endpoint
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok", message: "API is healthy" });
-  });
-
   const port = parseInt(process.env.PORT || "3000", 10);
   app.listen(port, "0.0.0.0", () => {
     console.log(`✅ Server listening on port ${port}`);
