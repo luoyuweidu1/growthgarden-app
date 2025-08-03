@@ -4,13 +4,7 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 function getApiBaseUrl(): string {
   const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
   // Remove trailing slash to avoid double slashes
-  const cleanApiUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-  console.log('🔍 Debug - API Base URL:', {
-    VITE_API_URL: import.meta.env.VITE_API_URL,
-    windowLocationOrigin: window.location.origin,
-    finalApiUrl: cleanApiUrl
-  });
-  return cleanApiUrl;
+  return apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
 }
 
 // Get auth token from Supabase
