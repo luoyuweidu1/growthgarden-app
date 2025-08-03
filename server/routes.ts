@@ -714,7 +714,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.get("/api/daily-habits", async (req, res) => {
+  app.get("/api/daily-habits", authenticateUser, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
       if (!startDate || !endDate) {
@@ -743,7 +743,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/daily-habits/:date", async (req, res) => {
+  app.patch("/api/daily-habits/:date", authenticateUser, async (req, res) => {
     try {
       const { date } = req.params;
       const updates = req.body;
@@ -1020,9 +1020,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Failed to check tree health" });
     }
-  }
-);
-app.use("/api", router);
+  });
 
   const httpServer = createServer(app);
   return httpServer;
