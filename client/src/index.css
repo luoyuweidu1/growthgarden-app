@@ -158,13 +158,13 @@
   }
 
   .fluid-gradient {
-    /* Updated to light yellow gradient - 2025-01-02 - FORCE REBUILD */
+    /* Updated to light green gradient to match website style */
     background: linear-gradient(135deg, 
-      rgba(255, 255, 200, 0.15) 0%, 
-      rgba(255, 250, 210, 0.35) 25%, 
-      rgba(255, 245, 220, 0.25) 50%, 
-      rgba(255, 248, 230, 0.15) 75%, 
-      rgba(255, 252, 240, 0.08) 100%);
+      rgba(240, 253, 244, 0.15) 0%, 
+      rgba(220, 252, 231, 0.25) 25%, 
+      rgba(187, 247, 208, 0.2) 50%, 
+      rgba(134, 239, 172, 0.15) 75%, 
+      rgba(34, 197, 94, 0.08) 100%);
   }
 
   /* Force rebuild - new class */
