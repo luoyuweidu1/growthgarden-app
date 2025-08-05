@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import { insertGoalSchema, insertActionSchema, insertAchievementSchema, insertDailyHabitSchema } from "@shared/schema";
 import { z } from "zod";
 import { authenticateUser } from "./auth.js";
+import { createStorage } from "./storage.js";
 
 // Helper functions for weekly reflection report
 function getFeelingEmoji(feeling: string): string {
@@ -480,8 +481,16 @@ async function callOpenAI(prompt: string, systemMessage: string = "") {
 }
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
-  const storage = app.locals.storage;
   const router = express.Router();
+
+  // Helper function to get user-specific storage
+  function getUserStorage(req: any) {
+    const userId = (req as any).userId;
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+    return createStorage(userId);
+  }
 
   // Health check endpoint
   app.get("/api/health", (_req, res) => {
@@ -496,7 +505,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Goals routes - require authentication
   app.get("/api/goals", authenticateUser, async (req, res) => {
     try {
-      const goals = await storage.getGoals();
+      const userStorage = getUserStorage(req);
+      const goals = await userStorage.getGoals();
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch goals" });
@@ -505,8 +515,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.get("/api/goals/:id", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const id = parseInt(req.params.id);
-      const goal = await storage.getGoal(id);
+      const goal = await userStorage.getGoal(id);
       if (!goal) {
         return res.status(404).json({ error: "Goal not found" });
       }
@@ -518,14 +529,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.post("/api/goals", authenticateUser, async (req, res) => {
     try {
-      const goalData = insertGoalSchema.parse({
-        ...req.body,
-        userId: (req as any).userId
-      });
-      const goal = await storage.createGoal(goalData);
+      const userStorage = getUserStorage(req);
+      const goalData = insertGoalSchema.parse(req.body);
+      const goal = await userStorage.createGoal(goalData);
       
       // Check for achievements to unlock
-      await checkAndCreateAchievements(storage);
+      await checkAndCreateAchievements(userStorage);
       
       res.status(201).json(goal);
     } catch (error) {
@@ -538,9 +547,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.patch("/api/goals/:id", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const id = parseInt(req.params.id);
       const updates = req.body;
-      const goal = await storage.updateGoal(id, updates);
+      const goal = await userStorage.updateGoal(id, updates);
       if (!goal) {
         return res.status(404).json({ error: "Goal not found" });
       }
@@ -552,8 +562,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.delete("/api/goals/:id", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteGoal(id);
+      const deleted = await userStorage.deleteGoal(id);
       if (!deleted) {
         return res.status(404).json({ error: "Goal not found" });
       }
@@ -566,7 +577,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Actions routes - require authentication
   app.get("/api/actions", authenticateUser, async (req, res) => {
     try {
-      const actions = await storage.getAllActions();
+      const userStorage = getUserStorage(req);
+      const actions = await userStorage.getAllActions();
       res.json(actions);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch actions" });
@@ -575,8 +587,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.get("/api/goals/:goalId/actions", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const goalId = parseInt(req.params.goalId);
-      const actions = await storage.getActionsByGoal(goalId);
+      const actions = await userStorage.getActionsByGoal(goalId);
       res.json(actions);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch actions" });
@@ -586,12 +599,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   app.post("/api/actions", authenticateUser, async (req, res) => {
     try {
       console.log("Received action data:", req.body);
-      const actionData = insertActionSchema.parse({
-        ...req.body,
-        userId: (req as any).userId
-      });
+      const userStorage = getUserStorage(req);
+      const actionData = insertActionSchema.parse(req.body);
       console.log("Parsed action data:", actionData);
-      const action = await storage.createAction(actionData);
+      const action = await userStorage.createAction(actionData);
       res.status(201).json(action);
     } catch (error) {
       if (error instanceof z.ZodError) {

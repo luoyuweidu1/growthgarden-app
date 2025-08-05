@@ -1,4 +1,6 @@
 import { goals, actions, achievements, dailyHabits, type Goal, type InsertGoal, type Action, type InsertAction, type Achievement, type InsertAchievement, type DailyHabit, type InsertDailyHabit } from "@shared/schema";
+import { db } from "./db.js";
+import { eq, and, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   // Goals
@@ -27,6 +29,148 @@ export interface IStorage {
   updateDailyHabit(date: string, updates: Partial<DailyHabit>): Promise<DailyHabit | undefined>;
 }
 
+export class DatabaseStorage implements IStorage {
+  constructor(private userId: string) {}
+
+  // Goals
+  async getGoals(): Promise<Goal[]> {
+    if (!db) throw new Error("Database not available");
+    return await db.select().from(goals).where(eq(goals.userId, this.userId));
+  }
+
+  async getGoal(id: number): Promise<Goal | undefined> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.select().from(goals).where(
+      and(eq(goals.id, id), eq(goals.userId, this.userId))
+    );
+    return result[0];
+  }
+
+  async createGoal(insertGoal: InsertGoal): Promise<Goal> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.insert(goals).values({
+      ...insertGoal,
+      userId: this.userId
+    }).returning();
+    return result[0];
+  }
+
+  async updateGoal(id: number, updates: Partial<Goal>): Promise<Goal | undefined> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.update(goals).set(updates).where(
+      and(eq(goals.id, id), eq(goals.userId, this.userId))
+    ).returning();
+    return result[0];
+  }
+
+  async deleteGoal(id: number): Promise<boolean> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.delete(goals).where(
+      and(eq(goals.id, id), eq(goals.userId, this.userId))
+    ).returning();
+    return result.length > 0;
+  }
+
+  // Actions
+  async getActionsByGoal(goalId: number): Promise<Action[]> {
+    if (!db) throw new Error("Database not available");
+    return await db.select().from(actions).where(
+      and(eq(actions.goalId, goalId), eq(actions.userId, this.userId))
+    );
+  }
+
+  async getAllActions(): Promise<Action[]> {
+    if (!db) throw new Error("Database not available");
+    return await db.select().from(actions).where(eq(actions.userId, this.userId));
+  }
+
+  async getAction(id: number): Promise<Action | undefined> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.select().from(actions).where(
+      and(eq(actions.id, id), eq(actions.userId, this.userId))
+    );
+    return result[0];
+  }
+
+  async createAction(insertAction: InsertAction): Promise<Action> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.insert(actions).values({
+      ...insertAction,
+      userId: this.userId,
+      dueDate: insertAction.dueDate ? new Date(insertAction.dueDate) : null
+    }).returning();
+    return result[0];
+  }
+
+  async updateAction(id: number, updates: Partial<Action>): Promise<Action | undefined> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.update(actions).set(updates).where(
+      and(eq(actions.id, id), eq(actions.userId, this.userId))
+    ).returning();
+    return result[0];
+  }
+
+  async deleteAction(id: number): Promise<boolean> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.delete(actions).where(
+      and(eq(actions.id, id), eq(actions.userId, this.userId))
+    ).returning();
+    return result.length > 0;
+  }
+
+  // Achievements
+  async getAchievements(): Promise<Achievement[]> {
+    if (!db) throw new Error("Database not available");
+    return await db.select().from(achievements).where(eq(achievements.userId, this.userId));
+  }
+
+  async createAchievement(insertAchievement: InsertAchievement): Promise<Achievement> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.insert(achievements).values({
+      ...insertAchievement,
+      userId: this.userId
+    }).returning();
+    return result[0];
+  }
+
+  // Daily Habits
+  async getDailyHabit(date: string): Promise<DailyHabit | undefined> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.select().from(dailyHabits).where(
+      and(eq(dailyHabits.date, date), eq(dailyHabits.userId, this.userId))
+    );
+    return result[0];
+  }
+
+  async getDailyHabits(startDate: string, endDate: string): Promise<DailyHabit[]> {
+    if (!db) throw new Error("Database not available");
+    return await db.select().from(dailyHabits).where(
+      and(
+        gte(dailyHabits.date, startDate),
+        lte(dailyHabits.date, endDate),
+        eq(dailyHabits.userId, this.userId)
+      )
+    );
+  }
+
+  async createDailyHabit(insertHabit: InsertDailyHabit): Promise<DailyHabit> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.insert(dailyHabits).values({
+      ...insertHabit,
+      userId: this.userId
+    }).returning();
+    return result[0];
+  }
+
+  async updateDailyHabit(date: string, updates: Partial<DailyHabit>): Promise<DailyHabit | undefined> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.update(dailyHabits).set(updates).where(
+      and(eq(dailyHabits.date, date), eq(dailyHabits.userId, this.userId))
+    ).returning();
+    return result[0];
+  }
+}
+
 export class MemStorage implements IStorage {
   private goals: Map<number, Goal>;
   private actions: Map<number, Action>;
@@ -37,7 +181,7 @@ export class MemStorage implements IStorage {
   private currentAchievementId: number;
   private currentDailyHabitId: number;
 
-  constructor() {
+  constructor(private userId: string) {
     this.goals = new Map();
     this.actions = new Map();
     this.achievements = new Map();
@@ -61,6 +205,7 @@ export class MemStorage implements IStorage {
     const id = this.currentGoalId++;
     const goal: Goal = {
       id,
+      userId: this.userId,
       name: insertGoal.name,
       description: insertGoal.description || null,
       plantType: insertGoal.plantType,
@@ -106,6 +251,7 @@ export class MemStorage implements IStorage {
     const id = this.currentActionId++;
     const action: Action = {
       id,
+      userId: this.userId,
       title: insertAction.title,
       description: insertAction.description ?? null,
       goalId: insertAction.goalId,
@@ -169,6 +315,7 @@ export class MemStorage implements IStorage {
     const id = this.currentDailyHabitId++;
     const habit: DailyHabit = {
       id,
+      userId: this.userId,
       date: insertHabit.date,
       eatHealthy: insertHabit.eatHealthy ?? false,
       exercise: insertHabit.exercise ?? false,
@@ -190,4 +337,10 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Create a function to get storage instance with user context
+export function createStorage(userId: string): IStorage {
+  return db ? new DatabaseStorage(userId) : new MemStorage(userId);
+}
+
+// For backward compatibility, export a default storage (will be replaced by user-specific storage)
+export const storage = createStorage('default-user');
