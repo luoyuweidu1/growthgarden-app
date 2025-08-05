@@ -56,6 +56,11 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
       'goals.noGoals': 'No goals planted yet. Plant your first goal to start growing!',
       'goals.checkAchievements': 'Check',
       'goals.checking': 'Checking...',
+      'goals.deleteGoal': 'Delete Goal',
+      'goals.deleteConfirmation': 'Are you sure you want to delete "{goalName}"? This will permanently remove the goal and all its associated actions from your garden. This action cannot be undone.',
+      'goals.deleting': 'Deleting...',
+      'goals.deleted': 'Goal deleted',
+      'goals.deletedDescription': 'Your goal has been removed from your garden.',
       
       // Achievements
       'achievements.title': 'Recent Activity',
@@ -154,6 +159,11 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
       'goals.noGoals': '还没有种植目标。种植你的第一个目标开始成长吧！',
       'goals.checkAchievements': '检查',
       'goals.checking': '检查中...',
+      'goals.deleteGoal': '删除目标',
+      'goals.deleteConfirmation': '你确定要删除"{goalName}"吗？这将永久删除该目标及其所有相关行动。此操作无法撤销。',
+      'goals.deleting': '删除中...',
+      'goals.deleted': '目标已删除',
+      'goals.deletedDescription': '你的目标已从花园中移除。',
       
       // Achievements
       'achievements.title': '最近活动',

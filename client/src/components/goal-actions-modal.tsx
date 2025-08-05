@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Check, Play, AlertTriangle, Plus, Calendar, Target, Edit } from "lucide-react";
+import { Check, Play, AlertTriangle, Plus, Calendar, Target, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +12,7 @@ import { ActionCreationModal } from "./action-creation-modal";
 import { ActionEditModal } from "./action-edit-modal";
 import { ActionReflectionModal } from "./action-reflection-modal";
 import type { Goal, Action } from "@shared/schema";
+import { useLanguage } from "@/contexts/language-context";
 
 interface GoalActionsModalProps {
   isOpen: boolean;
@@ -93,9 +95,11 @@ export function GoalActionsModal({ isOpen, onClose, goal, actions }: GoalActions
   const [isAddActionModalOpen, setIsAddActionModalOpen] = useState(false);
   const [isEditActionModalOpen, setIsEditActionModalOpen] = useState(false);
   const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const completeMutation = useMutation({
     mutationFn: async (actionId: number) => {
@@ -120,6 +124,28 @@ export function GoalActionsModal({ isOpen, onClose, goal, actions }: GoalActions
       toast({
         title: "Error",
         description: "Failed to complete action. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteGoalMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/goals/${goal.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/actions"] });
+      toast({
+        title: t('goals.deleted'),
+        description: t('goals.deletedDescription'),
+      });
+      onClose();
+    },
+    onError: (error) => {
+      toast({
+        title: t('common.error'),
+        description: "Failed to delete goal. Please try again.",
         variant: "destructive",
       });
     },
@@ -209,14 +235,25 @@ export function GoalActionsModal({ isOpen, onClose, goal, actions }: GoalActions
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto biomorphic-card">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-sage-800">
-              <div className="text-3xl">{getPlantVisualization(goal)}</div>
-              <div>
-                <div className="text-2xl font-bold">{goal.name}</div>
-                <div className="text-sm text-sage-600">
-                  {getPlantTypeName(goal.plantType)} • Level {goal.currentLevel} • {actions.length} actions
+            <DialogTitle className="flex items-center justify-between text-sage-800">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">{getPlantVisualization(goal)}</div>
+                <div>
+                  <div className="text-2xl font-bold">{goal.name}</div>
+                  <div className="text-sm text-sage-600">
+                    {getPlantTypeName(goal.plantType)} • Level {goal.currentLevel} • {actions.length} actions
+                  </div>
                 </div>
               </div>
+              <Button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                variant="ghost"
+                size="sm"
+                className="organic-shape hover:bg-red-100/50 text-red-600 hover:text-red-700 transition-all duration-300"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {t('goals.deleteGoal')}
+              </Button>
             </DialogTitle>
           </DialogHeader>
 
@@ -381,8 +418,41 @@ export function GoalActionsModal({ isOpen, onClose, goal, actions }: GoalActions
             setSelectedAction(null);
           }}
           action={selectedAction}
+          onComplete={() => {
+            setIsReflectionModalOpen(false);
+            setSelectedAction(null);
+          }}
+          onSkip={() => {
+            setIsReflectionModalOpen(false);
+            setSelectedAction(null);
+          }}
         />
       )}
+
+      {/* Delete Goal Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="biomorphic-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-sage-800">{t('goals.deleteGoal')}</AlertDialogTitle>
+            <AlertDialogDescription className="text-sage-600">
+              {t('goals.deleteConfirmation').replace('{goalName}', goal.name)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="organic-shape">{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                deleteGoalMutation.mutate();
+                setIsDeleteDialogOpen(false);
+              }}
+              disabled={deleteGoalMutation.isPending}
+              className="organic-shape bg-red-500 hover:bg-red-600 text-white"
+            >
+              {deleteGoalMutation.isPending ? t('goals.deleting') : t('goals.deleteGoal')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 } 
