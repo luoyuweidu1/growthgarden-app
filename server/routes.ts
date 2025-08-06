@@ -529,19 +529,24 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.post("/api/goals", authenticateUser, async (req, res) => {
     try {
+      console.log("Creating goal with data:", req.body);
       const userStorage = getUserStorage(req);
       const goalData = insertGoalSchema.parse(req.body);
+      console.log("Parsed goal data:", goalData);
       const goal = await userStorage.createGoal(goalData);
+      console.log("Created goal:", goal);
       
       // Check for achievements to unlock
       await checkAndCreateAchievements(userStorage);
       
       res.status(201).json(goal);
     } catch (error) {
+      console.error("Error creating goal:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid goal data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create goal" });
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to create goal", details: errorMessage });
     }
   });
 

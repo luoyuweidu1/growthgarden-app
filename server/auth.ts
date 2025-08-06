@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Request, Response, NextFunction } from 'express';
 import { SupabaseStorage } from './supabase-storage';
+import { db } from './db.js';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 // Initialize Supabase client conditionally
 let supabase: any = null;
@@ -17,6 +20,33 @@ function getSupabaseClient() {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
   }
   return supabase;
+}
+
+// Ensure user exists in local database
+async function ensureUserExists(userId: string, email: string, name?: string) {
+  if (!db) return; // Skip if no database connection
+  
+  try {
+    // Check if user exists
+    const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    
+    if (existingUser.length === 0) {
+      // Create user if they don't exist
+      console.log(`Creating new user in database: ${userId} (${email})`);
+      await db.insert(users).values({
+        id: userId,
+        email: email,
+        name: name || null,
+        avatarUrl: null,
+      });
+      console.log(`✅ User created successfully: ${userId}`);
+    } else {
+      console.log(`✅ User already exists in database: ${userId}`);
+    }
+  } catch (error) {
+    console.error('Error ensuring user exists:', error);
+    // Don't throw error, just log it
+  }
 }
 
 // Authentication middleware
@@ -37,6 +67,9 @@ export async function authenticateUser(req: Request, res: Response, next: NextFu
     if (error || !user) {
       return res.status(401).json({ error: 'Invalid token' });
     }
+
+    // Ensure user exists in local database
+    await ensureUserExists(user.id, user.email || '', user.user_metadata?.name);
 
     // Set user ID in request for use in routes
     (req as any).userId = user.id;

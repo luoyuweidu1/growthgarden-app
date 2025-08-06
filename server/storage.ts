@@ -51,11 +51,18 @@ export class DatabaseStorage implements IStorage {
 
   async createGoal(insertGoal: InsertGoal): Promise<Goal> {
     if (!db) throw new Error("Database not available");
-    const result = await db.insert(goals).values({
-      ...insertGoal,
-      userId: this.userId
-    }).returning();
-    return result[0];
+    console.log(`🌱 Creating goal for user ${this.userId}:`, insertGoal);
+    try {
+      const result = await db.insert(goals).values({
+        ...insertGoal,
+        userId: this.userId
+      }).returning();
+      console.log(`✅ Goal created successfully:`, result[0]);
+      return result[0];
+    } catch (error) {
+      console.error(`❌ Error creating goal for user ${this.userId}:`, error);
+      throw error;
+    }
   }
 
   async updateGoal(id: number, updates: Partial<Goal>): Promise<Goal | undefined> {
