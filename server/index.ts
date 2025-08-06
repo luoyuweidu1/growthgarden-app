@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { registerRoutes } from "./routes.js";
 import { storage } from "./storage.js";
+import { initializeDatabase } from "./db.js";
 
 dotenv.config();
 
@@ -11,6 +12,14 @@ async function startServer() {
 
   // Initialize storage
   app.locals.storage = storage;
+
+  // Initialize database
+  try {
+    await initializeDatabase();
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    // Continue with in-memory storage if database fails
+  }
 
   // Enable CORS for frontend
   app.use(cors({

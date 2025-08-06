@@ -35,7 +35,10 @@ export class DatabaseStorage implements IStorage {
   // Goals
   async getGoals(): Promise<Goal[]> {
     if (!db) throw new Error("Database not available");
-    return await db.select().from(goals).where(eq(goals.userId, this.userId));
+    console.log(`🔍 Fetching goals for user: ${this.userId}`);
+    const result = await db.select().from(goals).where(eq(goals.userId, this.userId));
+    console.log(`📊 Found ${result.length} goals for user: ${this.userId}`);
+    return result;
   }
 
   async getGoal(id: number): Promise<Goal | undefined> {
@@ -81,7 +84,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAllActions(): Promise<Action[]> {
     if (!db) throw new Error("Database not available");
-    return await db.select().from(actions).where(eq(actions.userId, this.userId));
+    console.log(`🔍 Fetching actions for user: ${this.userId}`);
+    const result = await db.select().from(actions).where(eq(actions.userId, this.userId));
+    console.log(`📊 Found ${result.length} actions for user: ${this.userId}`);
+    return result;
   }
 
   async getAction(id: number): Promise<Action | undefined> {
@@ -339,7 +345,13 @@ export class MemStorage implements IStorage {
 
 // Create a function to get storage instance with user context
 export function createStorage(userId: string): IStorage {
-  return db ? new DatabaseStorage(userId) : new MemStorage(userId);
+  if (db) {
+    console.log(`🔗 Using database storage for user: ${userId}`);
+    return new DatabaseStorage(userId);
+  } else {
+    console.log(`⚠️  Using in-memory storage for user: ${userId} (no database connection)`);
+    return new MemStorage(userId);
+  }
 }
 
 // For backward compatibility, export a default storage (will be replaced by user-specific storage)
