@@ -621,25 +621,26 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.patch("/api/actions/:id/complete", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const id = parseInt(req.params.id);
-      const action = await storage.getAction(id);
+      const action = await userStorage.getAction(id);
       if (!action) {
         return res.status(404).json({ error: "Action not found" });
       }
 
       // Mark action as completed
-      const updatedAction = await storage.updateAction(id, {
+      const updatedAction = await userStorage.updateAction(id, {
         isCompleted: true,
         completedAt: new Date(),
       });
 
       // Update goal XP and last watered
-      const goal = await storage.getGoal(action.goalId);
+      const goal = await userStorage.getGoal(action.goalId);
       if (goal) {
         const newXP = goal.currentXP + action.xpReward;
         const newLevel = Math.floor(newXP / goal.maxXP) + 1;
         
-        await storage.updateGoal(action.goalId, {
+        await userStorage.updateGoal(action.goalId, {
           currentXP: newXP % goal.maxXP,
           currentLevel: Math.max(goal.currentLevel, newLevel),
           lastWatered: new Date(),
@@ -647,25 +648,28 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       // Check for achievements to unlock
-      await checkAndCreateAchievements(storage);
+      await checkAndCreateAchievements(userStorage);
 
       res.json(updatedAction);
     } catch (error) {
-      res.status(500).json({ error: "Failed to complete action" });
+      console.error("Error completing action:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to complete action", details: errorMessage });
     }
   });
 
   app.patch("/api/actions/:id/reflection", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const id = parseInt(req.params.id);
-      const action = await storage.getAction(id);
+      const action = await userStorage.getAction(id);
       if (!action) {
         return res.status(404).json({ error: "Action not found" });
       }
 
       const { feeling, reflection, difficulty, satisfaction, reflectedAt } = req.body;
       
-      const updatedAction = await storage.updateAction(id, {
+      const updatedAction = await userStorage.updateAction(id, {
         feeling,
         reflection,
         difficulty,
@@ -675,113 +679,140 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       res.json(updatedAction);
     } catch (error) {
-      res.status(500).json({ error: "Failed to save reflection" });
+      console.error("Error saving reflection:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to save reflection", details: errorMessage });
     }
   });
 
   app.delete("/api/actions/:id", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteAction(id);
+      const deleted = await userStorage.deleteAction(id);
       if (!deleted) {
         return res.status(404).json({ error: "Action not found" });
       }
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete action" });
+      console.error("Error deleting action:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to delete action", details: errorMessage });
     }
   });
 
   // Achievements routes
   app.get("/api/achievements", authenticateUser, async (req, res) => {
     try {
-      const achievements = await storage.getAchievements();
+      const userStorage = getUserStorage(req);
+      const achievements = await userStorage.getAchievements();
       res.json(achievements);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch achievements" });
+      console.error("Error fetching achievements:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to fetch achievements", details: errorMessage });
     }
   });
 
-  app.post("/api/achievements", async (req, res) => {
+  app.post("/api/achievements", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const achievementData = insertAchievementSchema.parse(req.body);
-      const achievement = await storage.createAchievement(achievementData);
+      const achievement = await userStorage.createAchievement(achievementData);
       res.status(201).json(achievement);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid achievement data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create achievement" });
+      console.error("Error creating achievement:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to create achievement", details: errorMessage });
     }
   });
 
   // Manual achievement check endpoint
   app.post("/api/achievements/check", authenticateUser, async (req, res) => {
     try {
-      await checkAndCreateAchievements(storage);
-      res.json({ message: "Achievements checked", achievements: await storage.getAchievements() });
+      const userStorage = getUserStorage(req);
+      await checkAndCreateAchievements(userStorage);
+      res.json({ message: "Achievements checked", achievements: await userStorage.getAchievements() });
     } catch (error) {
-      res.status(500).json({ error: "Failed to check achievements" });
+      console.error("Error checking achievements:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to check achievements", details: errorMessage });
     }
   });
 
   // Daily Habits routes
   app.get("/api/daily-habits", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const { startDate, endDate } = req.query;
       if (!startDate || !endDate) {
         return res.status(400).json({ error: "startDate and endDate are required" });
       }
-      const habits = await storage.getDailyHabits(startDate as string, endDate as string);
+      const habits = await userStorage.getDailyHabits(startDate as string, endDate as string);
       res.json(habits);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch daily habits" });
+      console.error("Error fetching daily habits:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to fetch daily habits", details: errorMessage });
     }
   });
 
   app.post("/api/daily-habits", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const habitData = insertDailyHabitSchema.parse({
         ...req.body,
         userId: (req as any).userId
       });
-      const habit = await storage.createDailyHabit(habitData);
+      const habit = await userStorage.createDailyHabit(habitData);
       res.status(201).json(habit);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid habit data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create daily habit" });
+      console.error("Error creating daily habit:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to create daily habit", details: errorMessage });
     }
   });
 
   app.get("/api/daily-habits/:date", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const { date } = req.params;
-      const habit = await storage.getDailyHabit(date);
+      const habit = await userStorage.getDailyHabit(date);
       res.json(habit || null);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch daily habit" });
+      console.error("Error fetching daily habit:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to fetch daily habit", details: errorMessage });
     }
   });
 
   app.patch("/api/daily-habits/:date", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const { date } = req.params;
       const updates = req.body;
-      const habit = await storage.updateDailyHabit(date, updates);
+      const habit = await userStorage.updateDailyHabit(date, updates);
       if (!habit) {
         return res.status(404).json({ error: "Daily habit not found" });
       }
       res.json(habit);
     } catch (error) {
-      res.status(500).json({ error: "Failed to update daily habit" });
+      console.error("Error updating daily habit:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to update daily habit", details: errorMessage });
     }
   });
 
   // Weekly Reflection Report endpoints
-  app.get("/api/reports/weekly-reflection", async (req, res) => {
+  app.get("/api/reports/weekly-reflection", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const now = new Date();
       const weekStart = new Date(now);
       weekStart.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
@@ -792,7 +823,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       weekEnd.setHours(23, 59, 59, 999);
 
       // Get all actions with reflections from the past week
-      const allActions = await storage.getAllActions();
+      const allActions = await userStorage.getAllActions();
       const weeklyActions = allActions.filter((action: any) => 
         action.isCompleted && 
         action.reflectedAt && 
@@ -827,8 +858,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       // Calculate accomplishments
       const totalXP = weeklyActions.reduce((sum: number, action: any) => sum + action.xpReward, 0);
-      const achievements = await storage.getAchievements();
-      const weeklyAchievements = achievements.filter(achievement => {
+      const achievements = await userStorage.getAchievements();
+      const weeklyAchievements = achievements.filter((achievement: any) => {
         // This is a simplified check - in a real app you'd track when achievements were unlocked
         return true; // For demo purposes, show all achievements
       });
@@ -866,8 +897,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  app.post("/api/reports/weekly-reflection", async (req, res) => {
+  app.post("/api/reports/weekly-reflection", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       // This endpoint triggers the report generation
       // In a real app, you might want to cache this or generate it asynchronously
       const now = new Date();
@@ -879,7 +911,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       weekEnd.setDate(weekStart.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
 
-      const allActions = await storage.getAllActions();
+      const allActions = await userStorage.getAllActions();
       const weeklyActions = allActions.filter((action: any) => 
         action.isCompleted && 
         action.reflectedAt && 
@@ -913,7 +945,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }));
 
       const totalXP = weeklyActions.reduce((sum: number, action: any) => sum + action.xpReward, 0);
-      const achievements = await storage.getAchievements();
+      const achievements = await userStorage.getAchievements();
       const streak = Math.min(7, weeklyActions.length);
 
       const aiAnalysis = await generateAIAnalysis(weeklyActions, feelingDistribution);
@@ -927,7 +959,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         accomplishments: {
           totalActions: weeklyActions.length,
           totalXP,
-          achievements: achievements.map(a => a.title),
+          achievements: achievements.map((a: any) => a.title),
           streak,
           story: achievementStory
         },
@@ -937,12 +969,15 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       res.json(report);
     } catch (error) {
-      res.status(500).json({ error: "Failed to generate weekly report" });
+      console.error("Error generating weekly report:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to generate weekly report", details: errorMessage });
     }
   });
 
-  app.post("/api/reports/regenerate-insights", async (req, res) => {
+  app.post("/api/reports/regenerate-insights", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const now = new Date();
       const weekStart = new Date(now);
       weekStart.setDate(now.getDate() - now.getDay());
@@ -952,7 +987,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       weekEnd.setDate(weekStart.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
 
-      const allActions = await storage.getAllActions();
+      const allActions = await userStorage.getAllActions();
       const weeklyActions = allActions.filter((action: any) => 
         action.isCompleted && 
         action.reflectedAt && 
@@ -987,8 +1022,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       // Calculate accomplishments
       const totalXP = weeklyActions.reduce((sum: number, action: any) => sum + action.xpReward, 0);
-      const achievements = await storage.getAchievements();
-      const weeklyAchievements = achievements.filter(achievement => {
+      const achievements = await userStorage.getAchievements();
+      const weeklyAchievements = achievements.filter((achievement: any) => {
         return true; // For demo purposes, show all achievements
       });
 
@@ -1005,7 +1040,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         accomplishments: {
           totalActions: weeklyActions.length,
           totalXP,
-          achievements: weeklyAchievements.map(a => a.title),
+          achievements: weeklyAchievements.map((a: any) => a.title),
           streak
         },
         learningSummary,
@@ -1014,13 +1049,16 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       res.json(report);
     } catch (error) {
-      res.status(500).json({ error: "Failed to regenerate insights" });
+      console.error("Error regenerating insights:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to regenerate insights", details: errorMessage });
     }
   });
 
   // Historical reports endpoints
   app.get("/api/reports/historical", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const { weeks = "8" } = req.query; // Default to last 8 weeks
       const weeksBack = parseInt(weeks as string);
       
@@ -1036,7 +1074,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         weekEnd.setDate(weekStart.getDate() + 6);
         weekEnd.setHours(23, 59, 59, 999);
 
-        const allActions = await storage.getAllActions();
+        const allActions = await userStorage.getAllActions();
         const weeklyActions = allActions.filter((action: any) => 
           action.isCompleted && 
           action.reflectedAt && 
@@ -1067,7 +1105,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           }));
 
           const totalXP = weeklyActions.reduce((sum: number, action: any) => sum + action.xpReward, 0);
-          const achievements = await storage.getAchievements();
+          const achievements = await userStorage.getAchievements();
           const streak = Math.min(7, weeklyActions.length);
 
           const aiAnalysis = await generateAIAnalysis(weeklyActions, feelingDistribution);
@@ -1081,7 +1119,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
             accomplishments: {
               totalActions: weeklyActions.length,
               totalXP,
-              achievements: achievements.map(a => a.title),
+              achievements: achievements.map((a: any) => a.title),
               streak,
               story: achievementStory
             },
@@ -1099,13 +1137,14 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.get("/api/reports/historical/:weekStart", authenticateUser, async (req, res) => {
     try {
+      const userStorage = getUserStorage(req);
       const { weekStart } = req.params;
       const startDate = new Date(weekStart);
       const endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + 6);
       endDate.setHours(23, 59, 59, 999);
 
-      const allActions = await storage.getAllActions();
+      const allActions = await userStorage.getAllActions();
       const weeklyActions = allActions.filter((action: any) => 
         action.isCompleted && 
         action.reflectedAt && 
@@ -1139,7 +1178,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }));
 
       const totalXP = weeklyActions.reduce((sum: number, action: any) => sum + action.xpReward, 0);
-      const achievements = await storage.getAchievements();
+      const achievements = await userStorage.getAchievements();
       const streak = Math.min(7, weeklyActions.length);
 
       const aiAnalysis = await generateAIAnalysis(weeklyActions, feelingDistribution);
@@ -1153,7 +1192,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         accomplishments: {
           totalActions: weeklyActions.length,
           totalXP,
-          achievements: achievements.map(a => a.title),
+          achievements: achievements.map((a: any) => a.title),
           streak,
           story: achievementStory
         },
@@ -1163,14 +1202,17 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       res.json(report);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch historical report" });
+      console.error("Error fetching historical report:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to fetch historical report", details: errorMessage });
     }
   });
 
   // Health check for withering trees
-  app.post("/api/goals/check-health", async (req, res) => {
+  app.post("/api/goals/check-health", authenticateUser, async (req, res) => {
     try {
-      const goals = await storage.getGoals();
+      const userStorage = getUserStorage(req);
+      const goals = await userStorage.getGoals();
       const now = new Date();
       const updatedGoals = [];
 
@@ -1179,7 +1221,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           const hoursSinceWatered = (now.getTime() - goal.lastWatered.getTime()) / (1000 * 60 * 60);
           
           if (hoursSinceWatered > 168) { // 7 days = 168 hours
-            await storage.updateGoal(goal.id, { status: 'withered' });
+            await userStorage.updateGoal(goal.id, { status: 'withered' });
             updatedGoals.push({ ...goal, status: 'withered' });
           } else if (hoursSinceWatered > 72) { // 3 days = 72 hours
             updatedGoals.push({ ...goal, needsAttention: true });
@@ -1189,7 +1231,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       res.json({ updatedGoals });
     } catch (error) {
-      res.status(500).json({ error: "Failed to check tree health" });
+      console.error("Error checking tree health:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to check tree health", details: errorMessage });
     }
   });
 
