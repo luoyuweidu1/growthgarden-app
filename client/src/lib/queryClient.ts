@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { supabase } from '../components/auth-provider';
 
 // Get API base URL from environment variable or default to current origin
 function getApiBaseUrl(): string {
@@ -10,21 +11,11 @@ function getApiBaseUrl(): string {
 // Get auth token from Supabase
 async function getAuthToken(): Promise<string | null> {
   try {
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
     console.log('🔍 Debug - Environment variables:', {
-      supabaseUrl: !!supabaseUrl,
-      supabaseAnonKey: !!supabaseAnonKey
+      supabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
+      supabaseAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY
     });
     
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('Supabase environment variables not found');
-      return null;
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data: { session } } = await supabase.auth.getSession();
     
     console.log('🔍 Debug - Session:', {

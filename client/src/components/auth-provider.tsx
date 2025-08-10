@@ -5,11 +5,19 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+console.log('🔍 Supabase Client: Initializing with:', {
+  hasUrl: !!supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+  url: supabaseUrl?.substring(0, 30) + '...',
+  key: supabaseAnonKey?.substring(0, 20) + '...'
+});
+
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are required');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+console.log('🔍 Supabase Client: Created successfully');
 
 interface User {
   id: string;
@@ -34,18 +42,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔍 AuthProvider: Initializing...');
+    
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email!,
-          name: session.user.user_metadata?.name,
-          avatarUrl: session.user.user_metadata?.avatar_url,
-        });
+      try {
+        console.log('🔍 AuthProvider: Getting initial session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('🔍 AuthProvider: Error getting session:', error);
+          setLoading(false);
+          return;
+        }
+        
+        console.log('🔍 AuthProvider: Session result:', { hasSession: !!session, user: session?.user?.email });
+        
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email!,
+            name: session.user.user_metadata?.name,
+            avatarUrl: session.user.user_metadata?.avatar_url,
+          });
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('🔍 AuthProvider: Exception getting session:', error);
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getInitialSession();
@@ -53,6 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔍 AuthProvider: Auth state change:', { event, hasSession: !!session });
+        
         if (session?.user) {
           setUser({
             id: session.user.id,

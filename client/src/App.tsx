@@ -1,15 +1,30 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import Dashboard from "@/pages/dashboard";
-import NotFound from "@/pages/not-found";
+import { Toaster } from "./components/ui/toaster";
+import { TooltipProvider } from "./components/ui/tooltip";
+import Dashboard from "./pages/dashboard";
+import NotFound from "./pages/not-found";
 import { AuthProvider, useAuth } from "./components/auth-provider";
 import { LandingPage } from "./components/landing-page";
 import { LanguageProvider } from "./contexts/language-context";
 
-function Router() {
+function App() {
+  return (
+    <LanguageProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <AppRouter />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </LanguageProvider>
+  );
+}
+
+function AppRouter() {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -29,21 +44,6 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
-  );
-}
-
-function App() {
-  return (
-    <LanguageProvider>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </QueryClientProvider>
-      </AuthProvider>
-    </LanguageProvider>
   );
 }
 
