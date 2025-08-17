@@ -22,12 +22,52 @@ async function startServer() {
   }
 
   // Enable CORS for frontend
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || "http://localhost:5173",
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+    "https://growthgarden-app.vercel.app",
+    "https://growthgarden-app-pro-way-app.vercel.app", // Add the actual deployed URL
+    "http://localhost:3000", // For local frontend testing
+    "http://localhost:5173", // Vite dev server
+  ].filter(Boolean); // Remove null values
+
+  console.log('🌐 Allowed CORS origins:', allowedOrigins);
+
+  // Add more flexible origin checking for Vercel deployments
   app.use(cors({
-    origin: [
-      process.env.FRONTEND_URL || "http://localhost:5173",
-      "https://growthgarden-app.vercel.app"
-    ],
-    credentials: true
+    origin: (origin, callback) => {
+      console.log(`🔍 CORS Check - Origin: ${origin}`);
+      
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) {
+        console.log('✅ CORS allowed - No origin (mobile/curl)');
+        return callback(null, true);
+      }
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        console.log('✅ CORS allowed - In allowed origins list');
+        return callback(null, true);
+      }
+      
+      // Allow any vercel.app subdomain
+      if (origin.endsWith('.vercel.app')) {
+        console.log('✅ CORS allowed - Vercel subdomain');
+        return callback(null, true);
+      }
+      
+      // Allow localhost for development
+      if (origin.includes('localhost')) {
+        console.log('✅ CORS allowed - Localhost development');
+        return callback(null, true);
+      }
+      
+      console.log(`❌ CORS blocked - Origin not allowed: ${origin}`);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
   }));
 
   // Parse JSON bodies
