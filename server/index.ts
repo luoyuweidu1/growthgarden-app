@@ -63,13 +63,9 @@ async function startServer() {
         return callback(null, true);
       }
       
-      // TEMPORARY: Allow all origins for debugging
-      console.log('⚠️  CORS allowed - TEMPORARY DEBUG MODE');
-      return callback(null, true);
-      
-      // Commented out for debugging - uncomment this line and remove the line above once working
-      // console.log(`❌ CORS blocked - Origin not allowed: ${origin}`);
-      // return callback(new Error('Not allowed by CORS'));
+      // Block unknown origins when using credentials
+      console.log(`❌ CORS blocked - Origin not allowed: ${origin}`);
+      return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
