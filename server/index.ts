@@ -38,6 +38,7 @@ async function startServer() {
     origin: (origin, callback) => {
       console.log(`🔍 CORS Check - Origin: ${origin}`);
       console.log(`🔍 CORS Check - Allowed origins:`, allowedOrigins);
+      console.log(`🔍 CORS Check - Time: ${new Date().toISOString()}`);
       
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) {
