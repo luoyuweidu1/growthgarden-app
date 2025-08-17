@@ -37,6 +37,7 @@ async function startServer() {
   app.use(cors({
     origin: (origin, callback) => {
       console.log(`🔍 CORS Check - Origin: ${origin}`);
+      console.log(`🔍 CORS Check - Allowed origins:`, allowedOrigins);
       
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) {
@@ -50,24 +51,31 @@ async function startServer() {
         return callback(null, true);
       }
       
-      // Allow any vercel.app subdomain
-      if (origin.endsWith('.vercel.app')) {
-        console.log('✅ CORS allowed - Vercel subdomain');
+      // Allow any vercel.app subdomain (more permissive)
+      if (origin.includes('vercel.app')) {
+        console.log('✅ CORS allowed - Vercel domain');
         return callback(null, true);
       }
       
-      // Allow localhost for development
-      if (origin.includes('localhost')) {
+      // Allow any localhost variant
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
         console.log('✅ CORS allowed - Localhost development');
         return callback(null, true);
       }
       
-      console.log(`❌ CORS blocked - Origin not allowed: ${origin}`);
-      return callback(new Error('Not allowed by CORS'));
+      // TEMPORARY: Allow all origins for debugging
+      console.log('⚠️  CORS allowed - TEMPORARY DEBUG MODE');
+      return callback(null, true);
+      
+      // Commented out for debugging - uncomment this line and remove the line above once working
+      // console.log(`❌ CORS blocked - Origin not allowed: ${origin}`);
+      // return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   }));
 
   // Parse JSON bodies
