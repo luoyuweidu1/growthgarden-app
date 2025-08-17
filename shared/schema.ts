@@ -73,6 +73,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export const insertGoalSchema = createInsertSchema(goals).omit({
   id: true,
+  userId: true, // Exclude userId - it will be set by the backend based on auth
   currentLevel: true,
   currentXP: true,
   maxXP: true,

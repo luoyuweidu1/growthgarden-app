@@ -33,15 +33,9 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
     description: '',
     plantType: selectedPlantType,
     timelineMonths: 3,
-    userId: user?.id || '',
   });
 
-  // Update userId when user changes
-  React.useEffect(() => {
-    if (user?.id) {
-      setFormData(prev => ({ ...prev, userId: user.id }));
-    }
-  }, [user?.id]);
+  // No need to manage userId in the frontend - backend sets it from auth
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -75,7 +69,6 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
       description: '',
       plantType: 'sprout',
       timelineMonths: 3,
-      userId: user?.id || '',
     });
     setSelectedPlantType('sprout');
   };
@@ -101,10 +94,7 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
       return;
     }
 
-    createGoalMutation.mutate({
-      ...formData,
-      userId: user.id,
-    });
+    createGoalMutation.mutate(formData);
   };
 
   const handleClose = () => {
