@@ -52,27 +52,35 @@ async function ensureUserExists(userId: string, email: string, name?: string) {
 // Authentication middleware
 export async function authenticateUser(req: Request, res: Response, next: NextFunction) {
   try {
+    console.log("🔐 Auth middleware - Starting authentication");
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log("❌ Auth middleware - No bearer token provided");
       return res.status(401).json({ error: 'No token provided' });
     }
 
     const token = authHeader.substring(7);
+    console.log("🔐 Auth middleware - Token length:", token.length);
     
     // Verify the JWT token with Supabase
     const supabaseClient = getSupabaseClient();
+    console.log("🔐 Auth middleware - Verifying token with Supabase");
     const { data: { user }, error } = await supabaseClient.auth.getUser(token);
     
     if (error || !user) {
+      console.log("❌ Auth middleware - Token validation failed:", error?.message);
       return res.status(401).json({ error: 'Invalid token' });
     }
+
+    console.log("✅ Auth middleware - Token valid for user:", user.email);
 
     // Ensure user exists in local database
     await ensureUserExists(user.id, user.email || '', user.user_metadata?.name);
 
     // Set user ID in request for use in routes
     (req as any).userId = user.id;
+    console.log("✅ Auth middleware - Set userId in request:", user.id);
     
     // Set current user in storage
     if (req.app.locals.storage instanceof SupabaseStorage) {

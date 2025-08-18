@@ -486,10 +486,15 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Helper function to get user-specific storage
   function getUserStorage(req: any) {
     const userId = (req as any).userId;
+    console.log("🔍 getUserStorage - userId:", userId);
     if (!userId) {
+      console.error("❌ getUserStorage - No userId found in request");
       throw new Error("User not authenticated");
     }
-    return createStorage(userId);
+    console.log("🔍 getUserStorage - Creating storage for user:", userId);
+    const storage = createStorage(userId);
+    console.log("🔍 getUserStorage - Storage created successfully");
+    return storage;
   }
 
   // Health check endpoint
@@ -529,12 +534,17 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   app.post("/api/goals", authenticateUser, async (req, res) => {
     try {
-      console.log("Creating goal with data:", req.body);
+      console.log("🎯 POST /api/goals - Creating goal with data:", req.body);
+      console.log("🎯 User ID from auth:", (req as any).userId);
+      
       const userStorage = getUserStorage(req);
+      console.log("🎯 Got user storage successfully");
+      
       const goalData = insertGoalSchema.parse(req.body);
-      console.log("Parsed goal data:", goalData);
+      console.log("🎯 Parsed goal data:", goalData);
+      
       const goal = await userStorage.createGoal(goalData);
-      console.log("Created goal:", goal);
+      console.log("🎯 Created goal successfully:", goal);
       
       // Check for achievements to unlock
       await checkAndCreateAchievements(userStorage);
