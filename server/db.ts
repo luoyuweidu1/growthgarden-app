@@ -1,7 +1,7 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
 import * as schema from '@shared/schema';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
 
 // Database connection - force IPv4 by modifying URL if needed
 let connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
@@ -26,22 +26,14 @@ if (!connectionString && process.env.NODE_ENV === 'production') {
   throw new Error('DATABASE_URL or SUPABASE_DB_URL environment variable is required for production');
 }
 
-// Create postgres client only if connection string is available
-const client = connectionString ? postgres(connectionString, {
+// Create postgres client using node-postgres (pg) for better Supabase compatibility
+const client = connectionString ? new pg.Pool({
+  connectionString: connectionString,
   max: 1,
-  // Disable SSL to avoid SASL_SIGNATURE_MISMATCH errors with Supabase pooler
+  // Disable SSL to avoid SASL_SIGNATURE_MISMATCH errors
   ssl: false,
-  // Force IPv4 connection and handle SASL issues
-  host_type: 'tcp',
-  socket_timeout: 30,
-  idle_timeout: 20,
-  connect_timeout: 10,
-  prepare: false,
-  // Additional options to handle SASL issues
-  no_prepare: true,
-  types: {},
-  // Force TCP and disable prepared statements
-  transform: undefined,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 20000,
 }) : null;
 
 // Create drizzle database instance only if client exists
