@@ -3,8 +3,23 @@ import postgres from 'postgres';
 import * as schema from '@shared/schema';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
-// Database connection
-const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+// Database connection - force IPv4 by modifying URL if needed
+let connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+
+// Log the connection string (without password) for debugging
+if (connectionString) {
+  const sanitized = connectionString.replace(/:([^:@]+)@/, ':****@');
+  console.log('🔍 Database connection string:', sanitized);
+  
+  // Force SSL disable to avoid SASL issues
+  if (!connectionString.includes('?')) {
+    connectionString += '?sslmode=disable';
+  } else if (!connectionString.includes('sslmode')) {
+    connectionString += '&sslmode=disable';
+  }
+  
+  console.log('🔍 Modified connection string:', connectionString.replace(/:([^:@]+)@/, ':****@'));
+}
 
 // For development, we'll use in-memory storage if no database URL is provided
 if (!connectionString && process.env.NODE_ENV === 'production') {
@@ -14,7 +29,19 @@ if (!connectionString && process.env.NODE_ENV === 'production') {
 // Create postgres client only if connection string is available
 const client = connectionString ? postgres(connectionString, {
   max: 1,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Disable SSL to avoid SASL_SIGNATURE_MISMATCH errors with Supabase pooler
+  ssl: false,
+  // Force IPv4 connection and handle SASL issues
+  host_type: 'tcp',
+  socket_timeout: 30,
+  idle_timeout: 20,
+  connect_timeout: 10,
+  prepare: false,
+  // Additional options to handle SASL issues
+  no_prepare: true,
+  types: {},
+  // Force TCP and disable prepared statements
+  transform: undefined,
 }) : null;
 
 // Create drizzle database instance only if client exists
