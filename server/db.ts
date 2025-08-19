@@ -154,5 +154,5 @@ async function createTables() {
     );
   `;
 
-  await client.unsafe(createTablesSQL);
+  await client.query(createTablesSQL);
 } 
