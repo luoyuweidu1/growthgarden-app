@@ -3,22 +3,25 @@ import pg from 'pg';
 import * as schema from '@shared/schema';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 
-// Database connection - force IPv4 by modifying URL if needed
+// Database connection with Railway-specific configuration
 let connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+
+// Log environment info for debugging
+console.log('🔍 Environment:', process.env.NODE_ENV);
+console.log('🔍 Database source:', process.env.DATABASE_URL ? 'DATABASE_URL' : 'SUPABASE_DB_URL');
 
 // Log the connection string (without password) for debugging
 if (connectionString) {
   const sanitized = connectionString.replace(/:([^:@]+)@/, ':****@');
-  console.log('🔍 Database connection string:', sanitized);
+  console.log('🔍 Original connection string:', sanitized);
   
-  // Force SSL disable to avoid SASL issues
-  if (!connectionString.includes('?')) {
-    connectionString += '?sslmode=disable';
-  } else if (!connectionString.includes('sslmode')) {
-    connectionString += '&sslmode=disable';
+  // Railway PostgreSQL configuration - try different SSL approaches
+  if (!connectionString.includes('sslmode')) {
+    // Try with no SSL params first, let the SSL config in the pool handle it
+    console.log('🔍 Using SSL configuration from pool settings');
+  } else {
+    console.log('🔍 SSL mode already specified in connection string');
   }
-  
-  console.log('🔍 Modified connection string:', connectionString.replace(/:([^:@]+)@/, ':****@'));
 }
 
 // For development, we'll use in-memory storage if no database URL is provided
@@ -26,15 +29,46 @@ if (!connectionString && process.env.NODE_ENV === 'production') {
   throw new Error('DATABASE_URL or SUPABASE_DB_URL environment variable is required for production');
 }
 
-// Create postgres client using node-postgres (pg) for better Supabase compatibility
-const client = connectionString ? new pg.Pool({
-  connectionString: connectionString,
-  max: 1,
-  // Disable SSL to avoid SASL_SIGNATURE_MISMATCH errors
-  ssl: false,
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 20000,
-}) : null;
+// Create postgres client with Railway-optimized configuration and fallback
+function createDatabaseClient() {
+  if (!connectionString) return null;
+  
+  // Parse the connection string to understand the configuration
+  console.log('🔍 Attempting to create database client...');
+  
+  // Primary configuration for Railway
+  const poolConfig: pg.PoolConfig = {
+    connectionString: connectionString,
+    max: 5, // Optimal for Railway
+    min: 0, // Allow scaling to zero
+    connectionTimeoutMillis: 30000, // Longer timeout for Railway cold starts
+    idleTimeoutMillis: 600000, // 10 minutes idle timeout
+    allowExitOnIdle: true,
+    // Additional Railway optimizations
+    query_timeout: 60000,
+    statement_timeout: 60000,
+  };
+
+  // Add SSL configuration based on environment and URL
+  if (process.env.NODE_ENV === 'production') {
+    if (connectionString.includes('railway') || connectionString.includes('postgres')) {
+      // Railway-specific SSL configuration
+      poolConfig.ssl = {
+        rejectUnauthorized: false,
+      };
+    } else {
+      // Generic production SSL
+      poolConfig.ssl = true;
+    }
+  } else {
+    poolConfig.ssl = false;
+  }
+  
+  console.log('🔍 Pool config (SSL):', poolConfig.ssl);
+  return new pg.Pool(poolConfig);
+}
+
+const client = createDatabaseClient();
 
 // Create drizzle database instance only if client exists
 export const db = client ? drizzle(client, { schema }) : null;
@@ -52,6 +86,9 @@ export async function initializeDatabase() {
   try {
     console.log('🔧 Initializing database...');
     
+    // Test the connection first
+    await testDatabaseConnection();
+    
     // Check if tables exist by trying to query them
     const tablesExist = await checkTablesExist();
     
@@ -64,6 +101,46 @@ export async function initializeDatabase() {
     }
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
+    if (error instanceof Error) {
+      console.error('Full error details:', {
+        message: error.message,
+        code: (error as any).code,
+        stack: error.stack
+      });
+    }
+    throw error;
+  }
+}
+
+// Test database connection with detailed error reporting
+async function testDatabaseConnection() {
+  if (!client) {
+    throw new Error('No database client available');
+  }
+  
+  try {
+    console.log('🔍 Testing database connection...');
+    console.log('🔍 Pool info:', {
+      totalCount: client.totalCount,
+      idleCount: client.idleCount,
+      waitingCount: client.waitingCount
+    });
+    
+    const result = await client.query('SELECT NOW() as current_time, version() as pg_version');
+    console.log('✅ Database connection successful!');
+    console.log('🕒 Current time:', result.rows[0].current_time);
+    console.log('🗄️ PostgreSQL version:', result.rows[0].pg_version);
+  } catch (error) {
+    console.error('❌ Database connection test failed!');
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: (error as any).code,
+        severity: (error as any).severity,
+        routine: (error as any).routine
+      });
+    }
     throw error;
   }
 }
