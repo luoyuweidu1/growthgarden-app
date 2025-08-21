@@ -39,74 +39,96 @@ if (!connectionString && process.env.NODE_ENV === 'production') {
   throw new Error('DATABASE_URL or SUPABASE_DB_URL environment variable is required for production');
 }
 
-// Create postgres client with Railway-optimized configuration and fallback
+// Parse connection string to extract components
+function parseConnectionString(connString: string) {
+  const url = new URL(connString);
+  return {
+    host: url.hostname,
+    port: parseInt(url.port) || 5432,
+    database: url.pathname.slice(1), // Remove leading '/'
+    user: url.username,
+    password: url.password,
+  };
+}
+
+// Create postgres client with explicit configuration for better control
 function createDatabaseClient() {
   if (!connectionString) return null;
   
-  // Parse the connection string to understand the configuration
   console.log('🔍 Attempting to create database client...');
   
-  // Configuration optimized for the database provider
+  // Determine database provider
   const isSupabase = connectionString.includes('supabase.com');
   const isRailway = connectionString.includes('railway');
   
-  // Extract host from connection string for IPv4 forcing
-  let extractedHost: string | undefined;
-  if (isSupabase) {
-    const match = connectionString.match(/@([^:]+):/);
-    if (match) {
-      extractedHost = match[1];
-      console.log('🔍 Extracted Supabase host for IPv4:', extractedHost);
-    }
-  }
+  let poolConfig: pg.PoolConfig;
   
-  const poolConfig: pg.PoolConfig = {
-    connectionString: connectionString,
-    // Supabase pooler works better with fewer connections
-    max: isSupabase ? 3 : 5,
-    min: 0, // Allow scaling to zero
-    // Supabase pooler needs longer timeouts
-    connectionTimeoutMillis: isSupabase ? 60000 : 30000,
-    idleTimeoutMillis: isSupabase ? 300000 : 600000, // 5 minutes for Supabase
-    allowExitOnIdle: true,
-    // Query timeouts
-    query_timeout: 60000,
-    statement_timeout: 60000,
-    // Force IPv4 for Supabase to avoid connection issues
-    ...(isSupabase && extractedHost && {
-      host: extractedHost,
-      family: 4 as const, // Force IPv4
-    }),
-  };
-
-  // Add SSL configuration based on database provider
-  if (process.env.NODE_ENV === 'production') {
-    if (connectionString.includes('supabase.com')) {
-      // Supabase-specific SSL configuration for pooler compatibility
-      poolConfig.ssl = {
-        rejectUnauthorized: false, // Required for Supabase pooler
-        checkServerIdentity: () => undefined, // Disable server identity check
-      };
-    } else if (connectionString.includes('railway')) {
-      // Railway-specific SSL configuration
+  if (isSupabase) {
+    // For Supabase, use explicit configuration for better control
+    console.log('🔍 Using explicit Supabase configuration');
+    const parsed = parseConnectionString(connectionString);
+    
+    poolConfig = {
+      // Explicit connection parameters for Supabase
+      host: parsed.host,
+      port: parsed.port,
+      database: parsed.database,
+      user: parsed.user,
+      password: parsed.password,
+      
+      // SSL configuration for Supabase
+      ssl: {
+        rejectUnauthorized: false // Required for Supabase
+      },
+      
+      // Network configuration
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 0,
+      
+      // Pool settings optimized for Supabase
+      max: 3, // Supabase pooler works better with fewer connections
+      min: 0, // Allow scaling to zero
+      connectionTimeoutMillis: 60000, // Longer timeout for Supabase
+      idleTimeoutMillis: 300000, // 5 minutes for Supabase
+      allowExitOnIdle: true,
+      
+      // Query timeouts
+      query_timeout: 60000,
+      statement_timeout: 60000,
+    } as pg.PoolConfig & { family?: number };
+    
+    // Force IPv4 resolution (add after pool config creation)
+    (poolConfig as any).family = 4;
+    
+    console.log('🔍 Supabase config - Host:', parsed.host);
+    console.log('🔍 Supabase config - Port:', parsed.port);
+    console.log('🔍 Supabase config - Database:', parsed.database);
+    console.log('🔍 Supabase config - User:', parsed.user);
+    console.log('🔍 IPv4 forced with family: 4');
+    
+  } else {
+    // Fallback to connection string for non-Supabase databases
+    console.log('🔍 Using connection string for non-Supabase database');
+    poolConfig = {
+      connectionString: connectionString,
+      max: isRailway ? 5 : 3,
+      min: 0,
+      connectionTimeoutMillis: 30000,
+      idleTimeoutMillis: 600000,
+      allowExitOnIdle: true,
+      query_timeout: 60000,
+      statement_timeout: 60000,
+    };
+    
+    // Add SSL for production
+    if (process.env.NODE_ENV === 'production') {
       poolConfig.ssl = {
         rejectUnauthorized: false,
       };
-    } else {
-      // Generic production SSL
-      poolConfig.ssl = {
-        rejectUnauthorized: false
-      };
     }
-  } else {
-    poolConfig.ssl = false;
   }
   
   console.log('🔍 Pool config (SSL):', poolConfig.ssl);
-  if (isSupabase && extractedHost) {
-    console.log('🔍 IPv4 forced for Supabase host:', extractedHost);
-    console.log('🔍 Family setting:', (poolConfig as any).family);
-  }
   return new pg.Pool(poolConfig);
 }
 
