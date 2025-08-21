@@ -15,12 +15,22 @@ if (connectionString) {
   const sanitized = connectionString.replace(/:([^:@]+)@/, ':****@');
   console.log('🔍 Original connection string:', sanitized);
   
-  // Railway PostgreSQL configuration - try different SSL approaches
-  if (!connectionString.includes('sslmode')) {
-    // Try with no SSL params first, let the SSL config in the pool handle it
-    console.log('🔍 Using SSL configuration from pool settings');
+  // Fix SSL configuration for Supabase - remove sslmode=disable and let pool handle SSL
+  if (connectionString.includes('sslmode=disable')) {
+    connectionString = connectionString.replace(/[?&]sslmode=disable/, '');
+    connectionString = connectionString.replace(/sslmode=disable[?&]?/, '');
+    console.log('🔧 Removed sslmode=disable for Supabase compatibility');
+    const updatedSanitized = connectionString.replace(/:([^:@]+)@/, ':****@');
+    console.log('🔍 Updated connection string:', updatedSanitized);
+  }
+  
+  // Determine database provider
+  if (connectionString.includes('supabase.com')) {
+    console.log('🔍 Detected Supabase database - using Supabase SSL config');
+  } else if (connectionString.includes('railway')) {
+    console.log('🔍 Detected Railway database - using Railway SSL config');
   } else {
-    console.log('🔍 SSL mode already specified in connection string');
+    console.log('🔍 Unknown database provider - using generic SSL config');
   }
 }
 
@@ -36,29 +46,42 @@ function createDatabaseClient() {
   // Parse the connection string to understand the configuration
   console.log('🔍 Attempting to create database client...');
   
-  // Primary configuration for Railway
+  // Configuration optimized for the database provider
+  const isSupabase = connectionString.includes('supabase.com');
+  const isRailway = connectionString.includes('railway');
+  
   const poolConfig: pg.PoolConfig = {
     connectionString: connectionString,
-    max: 5, // Optimal for Railway
+    // Supabase pooler works better with fewer connections
+    max: isSupabase ? 3 : 5,
     min: 0, // Allow scaling to zero
-    connectionTimeoutMillis: 30000, // Longer timeout for Railway cold starts
-    idleTimeoutMillis: 600000, // 10 minutes idle timeout
+    // Supabase pooler needs longer timeouts
+    connectionTimeoutMillis: isSupabase ? 60000 : 30000,
+    idleTimeoutMillis: isSupabase ? 300000 : 600000, // 5 minutes for Supabase
     allowExitOnIdle: true,
-    // Additional Railway optimizations
+    // Query timeouts
     query_timeout: 60000,
     statement_timeout: 60000,
   };
 
-  // Add SSL configuration based on environment and URL
+  // Add SSL configuration based on database provider
   if (process.env.NODE_ENV === 'production') {
-    if (connectionString.includes('railway') || connectionString.includes('postgres')) {
+    if (connectionString.includes('supabase.com')) {
+      // Supabase-specific SSL configuration for pooler compatibility
+      poolConfig.ssl = {
+        rejectUnauthorized: false, // Required for Supabase pooler
+        checkServerIdentity: () => undefined, // Disable server identity check
+      };
+    } else if (connectionString.includes('railway')) {
       // Railway-specific SSL configuration
       poolConfig.ssl = {
         rejectUnauthorized: false,
       };
     } else {
       // Generic production SSL
-      poolConfig.ssl = true;
+      poolConfig.ssl = {
+        rejectUnauthorized: false
+      };
     }
   } else {
     poolConfig.ssl = false;
@@ -140,6 +163,14 @@ async function testDatabaseConnection() {
         severity: (error as any).severity,
         routine: (error as any).routine
       });
+      
+      // Specific guidance for SCRAM errors
+      if (error.message.includes('SCRAM-SERVER-FINAL-MESSAGE')) {
+        console.error('🔧 SCRAM authentication error detected. This usually indicates:');
+        console.error('   - SSL configuration mismatch with Supabase pooler');
+        console.error('   - Connection string contains conflicting SSL parameters');
+        console.error('   - Network/proxy issues interfering with the SSL handshake');
+      }
     }
     throw error;
   }
