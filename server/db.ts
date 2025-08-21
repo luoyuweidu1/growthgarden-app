@@ -50,6 +50,16 @@ function createDatabaseClient() {
   const isSupabase = connectionString.includes('supabase.com');
   const isRailway = connectionString.includes('railway');
   
+  // Extract host from connection string for IPv4 forcing
+  let extractedHost: string | undefined;
+  if (isSupabase) {
+    const match = connectionString.match(/@([^:]+):/);
+    if (match) {
+      extractedHost = match[1];
+      console.log('🔍 Extracted Supabase host for IPv4:', extractedHost);
+    }
+  }
+  
   const poolConfig: pg.PoolConfig = {
     connectionString: connectionString,
     // Supabase pooler works better with fewer connections
@@ -62,6 +72,11 @@ function createDatabaseClient() {
     // Query timeouts
     query_timeout: 60000,
     statement_timeout: 60000,
+    // Force IPv4 for Supabase to avoid connection issues
+    ...(isSupabase && extractedHost && {
+      host: extractedHost,
+      family: 4 as const, // Force IPv4
+    }),
   };
 
   // Add SSL configuration based on database provider
@@ -88,6 +103,10 @@ function createDatabaseClient() {
   }
   
   console.log('🔍 Pool config (SSL):', poolConfig.ssl);
+  if (isSupabase && extractedHost) {
+    console.log('🔍 IPv4 forced for Supabase host:', extractedHost);
+    console.log('🔍 Family setting:', (poolConfig as any).family);
+  }
   return new pg.Pool(poolConfig);
 }
 
