@@ -81,9 +81,10 @@ function createDatabaseClient() {
         rejectUnauthorized: false // Required for Supabase
       },
       
-      // Network configuration
+      // Network configuration - Force IPv4
       keepAlive: true,
       keepAliveInitialDelayMillis: 0,
+      family: 4, // Force IPv4 resolution
       
       // Pool settings optimized for Supabase
       max: 3, // Supabase pooler works better with fewer connections
@@ -95,10 +96,7 @@ function createDatabaseClient() {
       // Query timeouts
       query_timeout: 60000,
       statement_timeout: 60000,
-    } as pg.PoolConfig & { family?: number };
-    
-    // Force IPv4 resolution (add after pool config creation)
-    (poolConfig as any).family = 4;
+    } as pg.PoolConfig;
     
     console.log('🔍 Supabase config - Host:', parsed.host);
     console.log('🔍 Supabase config - Port:', parsed.port);
@@ -111,6 +109,7 @@ function createDatabaseClient() {
     console.log('🔍 Using connection string for non-Supabase database');
     poolConfig = {
       connectionString: connectionString,
+      family: 4, // Force IPv4 resolution for all databases
       max: isRailway ? 5 : 3,
       min: 0,
       connectionTimeoutMillis: 30000,
