@@ -79,6 +79,48 @@ async function createDatabaseClient() {
   const url = new URL(connectionString);
   const originalHost = url.hostname;
   
+  // For Supabase databases, force IPv4 by using alternative endpoint
+  if (originalHost.includes('supabase.co')) {
+    console.log('🔍 Detected Supabase database - using IPv4 pooler endpoint');
+    
+    // Replace hostname with IPv4-specific pooler endpoint
+    // Supabase offers both IPv6 (default) and IPv4 endpoints
+    // Format: db.{project}.supabase.co -> {project}.pooler.supabase.com (IPv4)
+    const projectId = originalHost.split('.')[1]; // Extract yonafgzylblknbrytcbr from db.yonafgzylblknbrytcbr.supabase.co
+    const ipv4Host = `${projectId}.pooler.supabase.com`;
+    
+    console.log('🔍 Original hostname:', originalHost);
+    console.log('🔍 IPv4 pooler hostname:', ipv4Host);
+    
+    // Create new connection string with IPv4 pooler endpoint
+    url.hostname = ipv4Host;
+    url.port = '6543'; // Pooler uses port 6543 instead of 5432
+    const ipv4ConnectionString = url.toString();
+    
+    console.log('🔍 Using Supabase IPv4 pooler endpoint');
+    const sanitizedConnectionString = ipv4ConnectionString.replace(/:([^:@]+)@/, ':****@');
+    console.log('🔍 IPv4 connection string:', sanitizedConnectionString);
+    
+    const poolConfig: pg.PoolConfig = {
+      connectionString: ipv4ConnectionString,
+      max: 3,
+      min: 0,
+      connectionTimeoutMillis: 60000,
+      idleTimeoutMillis: 300000,
+      allowExitOnIdle: true,
+      query_timeout: 60000,
+      statement_timeout: 60000,
+      ssl: {
+        rejectUnauthorized: false,
+        // Use original hostname for SSL verification
+        servername: originalHost
+      }
+    };
+    
+    return new pg.Pool(poolConfig);
+  }
+  
+  // For non-Supabase databases, try DNS resolution approach
   try {
     // Force IPv4 resolution for the hostname
     console.log('🔍 Forcing IPv4 resolution for Railway compatibility');
@@ -108,7 +150,6 @@ async function createDatabaseClient() {
     };
     
     console.log('🔍 Using IPv4 address for connection');
-    console.log('🔍 Pool config (SSL):', poolConfig.ssl);
     return new pg.Pool(poolConfig);
     
   } catch (error) {
