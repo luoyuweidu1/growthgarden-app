@@ -1,18 +1,19 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "NIXPACKS",
+    "buildCommand": "npm ci --no-cache && npm run build"
   },
   "deploy": {
-    "startCommand": "npm start",
-    "buildCommand": "npm run build",
+    "startCommand": "node --dns-result-order=ipv4first dist/index.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   },
   "environments": {
     "production": {
       "variables": {
-        "NODE_OPTIONS": "--dns-result-order=ipv4first"
+        "NODE_OPTIONS": "--dns-result-order=ipv4first --max-old-space-size=512",
+        "NPM_CONFIG_CACHE": "/tmp/.npm"
       }
     }
   }
