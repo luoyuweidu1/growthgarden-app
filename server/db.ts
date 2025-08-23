@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from '@shared/schema';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import * as dns from 'dns';
 
 // Database connection with Railway-specific configuration
 let connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
@@ -52,8 +53,23 @@ function parseConnectionString(connString: string) {
   };
 }
 
+// Resolve hostname to IPv4 address
+async function resolveToIPv4(hostname: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    dns.lookup(hostname, { family: 4 }, (err, address) => {
+      if (err) {
+        console.error(`❌ Failed to resolve ${hostname} to IPv4:`, err);
+        reject(err);
+      } else {
+        console.log(`🔍 Resolved ${hostname} to IPv4: ${address}`);
+        resolve(address);
+      }
+    });
+  });
+}
+
 // Create postgres client with explicit configuration for better control
-function createDatabaseClient() {
+async function createDatabaseClient() {
   if (!connectionString) return null;
   
   console.log('🔍 Attempting to create database client...');
@@ -69,9 +85,19 @@ function createDatabaseClient() {
     console.log('🔍 Using explicit Supabase configuration');
     const parsed = parseConnectionString(connectionString);
     
+    // Resolve hostname to IPv4 to bypass IPv6 issues
+    let resolvedHost: string;
+    try {
+      resolvedHost = await resolveToIPv4(parsed.host);
+      console.log('🔍 Using IPv4 address instead of hostname');
+    } catch (error) {
+      console.log('⚠️ Failed to resolve to IPv4, using hostname as fallback');
+      resolvedHost = parsed.host;
+    }
+    
     poolConfig = {
       // Explicit connection parameters for Supabase
-      host: parsed.host,
+      host: resolvedHost, // Use resolved IPv4 address
       port: parsed.port,
       database: parsed.database,
       user: parsed.user,
@@ -99,7 +125,7 @@ function createDatabaseClient() {
       statement_timeout: 60000,
     } as pg.PoolConfig;
     
-    console.log('🔍 Supabase config - Host:', parsed.host);
+    console.log('🔍 Supabase config - Host:', resolvedHost);
     console.log('🔍 Supabase config - Port:', parsed.port);
     console.log('🔍 Supabase config - Database:', parsed.database);
     console.log('🔍 Supabase config - User:', parsed.user);
@@ -132,16 +158,27 @@ function createDatabaseClient() {
   return new pg.Pool(poolConfig);
 }
 
-const client = createDatabaseClient();
+// Initialize client and database - will be set during initialization
+let client: pg.Pool | null = null;
+let db: ReturnType<typeof drizzle> | null = null;
 
-// Create drizzle database instance only if client exists
-export const db = client ? drizzle(client, { schema }) : null;
+// Export getter functions since client/db are initialized asynchronously
+export function getClient() { return client; }
+export function getDb() { return db; }
 
-// Export the client for direct queries if needed
-export { client };
+// For backward compatibility
+export { client, db };
 
 // Database initialization function
 export async function initializeDatabase() {
+  // Create database client first
+  if (!client) {
+    client = await createDatabaseClient();
+    if (client) {
+      db = drizzle(client, { schema });
+    }
+  }
+  
   if (!db || !client) {
     console.log('⚠️  No database connection available, using in-memory storage');
     return;
