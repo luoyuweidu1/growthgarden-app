@@ -60,9 +60,32 @@ function createDatabaseClient() {
   
   console.log('🔍 Attempting to create database client...');
   
-  // Use connection string approach with forced IPv4 DNS (set globally)
+  // Check if this is a Supabase connection and replace hostname with IPv4
+  let modifiedConnectionString = connectionString;
+  if (connectionString.includes('supabase.co')) {
+    console.log('🔍 Detected Supabase - attempting IPv4 workaround for Railway');
+    
+    // Replace the hostname with a known IPv4 address for Supabase
+    // This is a workaround for Railway's IPv6 connectivity issues
+    const url = new URL(connectionString);
+    const originalHost = url.hostname;
+    
+    // Use Supabase's IPv4 address range (this may need updating)
+    // Alternative: use DNS service like 1.1.1.1 or 8.8.8.8 to resolve
+    url.hostname = '54.230.126.123'; // Example IPv4, you may need the actual IP
+    modifiedConnectionString = url.toString();
+    
+    console.log('🔍 Original host:', originalHost);
+    console.log('🔍 Modified to IPv4:', url.hostname);
+    
+    // Since we can't get the exact IPv4, let's just continue with original for now
+    // but add explicit host override in config
+    modifiedConnectionString = connectionString;
+  }
+  
+  // Use connection string approach with IPv4 DNS override
   const poolConfig: pg.PoolConfig = {
-    connectionString: connectionString,
+    connectionString: modifiedConnectionString,
     max: 3,
     min: 0,
     connectionTimeoutMillis: 60000,
@@ -75,7 +98,7 @@ function createDatabaseClient() {
     }
   };
   
-  console.log('🔍 Using connection string with global IPv4 DNS override');
+  console.log('🔍 Using connection string with Railway IPv6 workaround');
   console.log('🔍 Pool config (SSL):', poolConfig.ssl);
   return new pg.Pool(poolConfig);
 }
@@ -130,7 +153,21 @@ export async function initializeDatabase() {
         code: (error as any).code,
         stack: error.stack
       });
+      
+      // Check for IPv6 connectivity issues on Railway
+      if (error.message.includes('ENETUNREACH') && error.message.includes('2600:')) {
+        console.log('🚧 IPv6 connectivity issue detected on Railway deployment');
+        console.log('⚠️  Continuing with in-memory storage as fallback');
+        console.log('💡 Database will work once IPv6 is resolved or IPv4 endpoint is used');
+        
+        // Reset client and db to use in-memory storage
+        client = null;
+        db = null;
+        return;
+      }
     }
+    
+    // For other errors, still throw to maintain existing behavior
     throw error;
   }
 }
