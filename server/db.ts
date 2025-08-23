@@ -82,6 +82,7 @@ async function createDatabaseClient() {
   // For Supabase databases, force IPv4 by using Supavisor pooler endpoint
   if (originalHost.includes('supabase.co')) {
     console.log('🔍 Detected Supabase database - using Supavisor IPv4 pooler endpoint');
+  console.log('🔍 CODE VERSION: 2024-session-mode-fix'); // Debug marker to verify deployment
     
     // Extract project ref from hostname: db.yonafgzylblknbrytcbr.supabase.co
     const projectRef = originalHost.split('.')[1];
@@ -105,14 +106,14 @@ async function createDatabaseClient() {
     
     // Create new connection string with Supavisor pooler endpoint
     url.hostname = poolerHost;
-    url.port = '6543'; // Supavisor transaction mode port
+    url.port = '5432'; // Use Supavisor session mode port instead of transaction mode
     url.username = poolerUsername;
     
     // Remove sslmode parameter and let the pool config handle SSL
     url.searchParams.delete('sslmode');
     const ipv4ConnectionString = url.toString();
     
-    console.log('🔍 Using Supavisor IPv4 pooler endpoint (transaction mode)');
+    console.log('🔍 Using Supavisor IPv4 pooler endpoint (session mode - port 5432)');
     console.log('🔍 SSL mode removed from connection string');
     const sanitizedConnectionString = ipv4ConnectionString.replace(/:([^:@]+)@/, ':****@');
     console.log('🔍 IPv4 connection string:', sanitizedConnectionString);
