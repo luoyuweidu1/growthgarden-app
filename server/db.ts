@@ -79,25 +79,31 @@ async function createDatabaseClient() {
   const url = new URL(connectionString);
   const originalHost = url.hostname;
   
-  // For Supabase databases, force IPv4 by using alternative endpoint
+  // For Supabase databases, force IPv4 by using Supavisor pooler endpoint
   if (originalHost.includes('supabase.co')) {
-    console.log('🔍 Detected Supabase database - using IPv4 pooler endpoint');
+    console.log('🔍 Detected Supabase database - using Supavisor IPv4 pooler endpoint');
     
-    // Replace hostname with IPv4-specific pooler endpoint
-    // Supabase offers both IPv6 (default) and IPv4 endpoints
-    // Format: db.{project}.supabase.co -> {project}.pooler.supabase.com (IPv4)
-    const projectId = originalHost.split('.')[1]; // Extract yonafgzylblknbrytcbr from db.yonafgzylblknbrytcbr.supabase.co
-    const ipv4Host = `${projectId}.pooler.supabase.com`;
+    // Extract project ref from hostname: db.yonafgzylblknbrytcbr.supabase.co
+    const projectRef = originalHost.split('.')[1];
+    
+    // Supavisor pooler format: postgres.{project_ref}:{password}@aws-0-{region}.pooler.supabase.com:6543
+    // We need to modify both the hostname and username format
+    const poolerHost = 'aws-0-us-east-1.pooler.supabase.com'; // Default to us-east-1, most common region
+    const originalUsername = url.username;
+    const poolerUsername = `postgres.${projectRef}`;
     
     console.log('🔍 Original hostname:', originalHost);
-    console.log('🔍 IPv4 pooler hostname:', ipv4Host);
+    console.log('🔍 Original username:', originalUsername);
+    console.log('🔍 Supavisor pooler hostname:', poolerHost);
+    console.log('🔍 Supavisor username format:', poolerUsername);
     
-    // Create new connection string with IPv4 pooler endpoint
-    url.hostname = ipv4Host;
-    url.port = '6543'; // Pooler uses port 6543 instead of 5432
+    // Create new connection string with Supavisor pooler endpoint
+    url.hostname = poolerHost;
+    url.port = '6543'; // Supavisor transaction mode port
+    url.username = poolerUsername;
     const ipv4ConnectionString = url.toString();
     
-    console.log('🔍 Using Supabase IPv4 pooler endpoint');
+    console.log('🔍 Using Supavisor IPv4 pooler endpoint (transaction mode)');
     const sanitizedConnectionString = ipv4ConnectionString.replace(/:([^:@]+)@/, ':****@');
     console.log('🔍 IPv4 connection string:', sanitizedConnectionString);
     
@@ -111,9 +117,7 @@ async function createDatabaseClient() {
       query_timeout: 60000,
       statement_timeout: 60000,
       ssl: {
-        rejectUnauthorized: false,
-        // Use original hostname for SSL verification
-        servername: originalHost
+        rejectUnauthorized: false
       }
     };
     
