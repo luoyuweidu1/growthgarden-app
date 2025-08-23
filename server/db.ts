@@ -3,6 +3,7 @@ import pg from 'pg';
 import * as schema from '@shared/schema';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import * as dns from 'dns';
+import { promisify } from 'util';
 
 // Database connection with Railway-specific configuration
 let connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
@@ -53,54 +54,84 @@ function parseConnectionString(connString: string) {
   };
 }
 
+// Custom IPv4-only DNS lookup function
+async function lookupIPv4Only(hostname: string): Promise<string> {
+  const lookupAsync = promisify(dns.lookup);
+  try {
+    console.log(`🔍 Attempting IPv4-only lookup for: ${hostname}`);
+    const result = await lookupAsync(hostname, { family: 4 });
+    const ipv4Address = typeof result === 'string' ? result : result.address;
+    console.log(`✅ IPv4 resolved: ${hostname} -> ${ipv4Address}`);
+    return ipv4Address;
+  } catch (error) {
+    console.error(`❌ IPv4 lookup failed for ${hostname}:`, error);
+    throw error;
+  }
+}
 
 // Create postgres client with explicit configuration for better control
-function createDatabaseClient() {
+async function createDatabaseClient() {
   if (!connectionString) return null;
   
   console.log('🔍 Attempting to create database client...');
   
-  // Check if this is a Supabase connection and replace hostname with IPv4
-  let modifiedConnectionString = connectionString;
-  if (connectionString.includes('supabase.co')) {
-    console.log('🔍 Detected Supabase - attempting IPv4 workaround for Railway');
+  // Parse the connection string to extract components
+  const url = new URL(connectionString);
+  const originalHost = url.hostname;
+  
+  try {
+    // Force IPv4 resolution for the hostname
+    console.log('🔍 Forcing IPv4 resolution for Railway compatibility');
+    const ipv4Address = await lookupIPv4Only(originalHost);
     
-    // Replace the hostname with a known IPv4 address for Supabase
-    // This is a workaround for Railway's IPv6 connectivity issues
-    const url = new URL(connectionString);
-    const originalHost = url.hostname;
+    // Create new connection string with IPv4 address
+    url.hostname = ipv4Address;
+    const ipv4ConnectionString = url.toString();
     
-    // Use Supabase's IPv4 address range (this may need updating)
-    // Alternative: use DNS service like 1.1.1.1 or 8.8.8.8 to resolve
-    url.hostname = '54.230.126.123'; // Example IPv4, you may need the actual IP
-    modifiedConnectionString = url.toString();
+    console.log('🔍 Original hostname:', originalHost);
+    console.log('🔍 Resolved IPv4 address:', ipv4Address);
     
-    console.log('🔍 Original host:', originalHost);
-    console.log('🔍 Modified to IPv4:', url.hostname);
+    const poolConfig: pg.PoolConfig = {
+      connectionString: ipv4ConnectionString,
+      max: 3,
+      min: 0,
+      connectionTimeoutMillis: 60000,
+      idleTimeoutMillis: 300000,
+      allowExitOnIdle: true,
+      query_timeout: 60000,
+      statement_timeout: 60000,
+      ssl: {
+        rejectUnauthorized: false,
+        // Add servername for SSL verification with IP address
+        servername: originalHost
+      }
+    };
     
-    // Since we can't get the exact IPv4, let's just continue with original for now
-    // but add explicit host override in config
-    modifiedConnectionString = connectionString;
+    console.log('🔍 Using IPv4 address for connection');
+    console.log('🔍 Pool config (SSL):', poolConfig.ssl);
+    return new pg.Pool(poolConfig);
+    
+  } catch (error) {
+    console.error('❌ Failed to resolve hostname to IPv4, falling back to original connection string');
+    
+    // Fallback to original connection string
+    const poolConfig: pg.PoolConfig = {
+      connectionString: connectionString,
+      max: 3,
+      min: 0,
+      connectionTimeoutMillis: 60000,
+      idleTimeoutMillis: 300000,
+      allowExitOnIdle: true,
+      query_timeout: 60000,
+      statement_timeout: 60000,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    };
+    
+    console.log('🔍 Using original connection string as fallback');
+    return new pg.Pool(poolConfig);
   }
-  
-  // Use connection string approach with IPv4 DNS override
-  const poolConfig: pg.PoolConfig = {
-    connectionString: modifiedConnectionString,
-    max: 3,
-    min: 0,
-    connectionTimeoutMillis: 60000,
-    idleTimeoutMillis: 300000,
-    allowExitOnIdle: true,
-    query_timeout: 60000,
-    statement_timeout: 60000,
-    ssl: {
-      rejectUnauthorized: false
-    }
-  };
-  
-  console.log('🔍 Using connection string with Railway IPv6 workaround');
-  console.log('🔍 Pool config (SSL):', poolConfig.ssl);
-  return new pg.Pool(poolConfig);
 }
 
 // Initialize client and database - will be set during initialization
@@ -118,7 +149,7 @@ export { client, db };
 export async function initializeDatabase() {
   // Create database client first
   if (!client) {
-    client = createDatabaseClient();
+    client = await createDatabaseClient();
     if (client) {
       db = drizzle(client, { schema });
     }
