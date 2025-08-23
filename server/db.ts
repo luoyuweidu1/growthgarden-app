@@ -25,12 +25,13 @@ if (connectionString) {
   }
   
   // Determine database provider
-  if (connectionString.includes('supabase.com')) {
+  if (connectionString.includes('supabase.co')) {
     console.log('🔍 Detected Supabase database - using Supabase SSL config');
   } else if (connectionString.includes('railway')) {
     console.log('🔍 Detected Railway database - using Railway SSL config');
   } else {
     console.log('🔍 Unknown database provider - using generic SSL config');
+    console.log('🔍 Connection string for debugging:', connectionString.substring(0, 50) + '...');
   }
 }
 
@@ -58,7 +59,7 @@ function createDatabaseClient() {
   console.log('🔍 Attempting to create database client...');
   
   // Determine database provider
-  const isSupabase = connectionString.includes('supabase.com');
+  const isSupabase = connectionString.includes('supabase.co');
   const isRailway = connectionString.includes('railway');
   
   let poolConfig: pg.PoolConfig;
