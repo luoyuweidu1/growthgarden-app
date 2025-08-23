@@ -1,7 +1,8 @@
 // Force IPv4 DNS resolution at application level - MUST be at the very top
 import * as dns from 'dns';
+import { promisify } from 'util';
 
-console.log('🔧 Configuring DNS to force IPv4 resolution...');
+console.log('🔧 Configuring aggressive IPv4 DNS resolution...');
 
 // Set environment variable to force IPv4
 process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --dns-result-order=ipv4first';
@@ -9,7 +10,21 @@ process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --dns-result-ord
 // Set IPv4 as the default resolution order
 dns.setDefaultResultOrder('ipv4first');
 
-console.log('✅ DNS configuration complete - all lookups will use IPv4');
+// Override the default lookup function to force IPv4 using module patching
+const originalLookup = dns.lookup;
+(dns as any).lookup = (hostname: string, options: any, callback?: any) => {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  // Force IPv4 family for all lookups
+  options = { ...options, family: 4 };
+  console.log(`🔍 DNS Override: Forcing IPv4 lookup for ${hostname}`);
+  return originalLookup(hostname, options, callback);
+};
+
+console.log('✅ Aggressive IPv4 DNS configuration complete - all lookups forced to IPv4');
+console.log('🔍 DNS override active - every hostname lookup will use IPv4 only');
 
 import express from "express";
 import dotenv from "dotenv";
