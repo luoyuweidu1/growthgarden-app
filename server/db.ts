@@ -79,38 +79,76 @@ async function createDatabaseClient() {
   const url = new URL(connectionString);
   const originalHost = url.hostname;
   
-    // For Supabase databases, use direct connection with IPv4 DNS preference
+    // For Supabase databases, manually resolve to IPv4 before connection
   if (originalHost.includes('supabase.co')) {
-    console.log('🔍 Detected Supabase database - using direct connection with IPv4 preference');
-    console.log('🔍 CODE VERSION: 2024-ipv4-preference-fix'); // Debug marker to verify deployment
+    console.log('🔍 Detected Supabase database - manually resolving to IPv4');
+    console.log('🔍 CODE VERSION: 2024-manual-ipv4-resolution'); // Debug marker to verify deployment
     
     console.log('🔍 Original hostname:', originalHost);
-    console.log('🔍 DNS configuration set to prefer IPv4 resolution');
     
-    // Use original connection string with IPv4 preference from DNS configuration
-    const directConnectionString = connectionString;
-    const sanitizedConnectionString = directConnectionString.replace(/:([^:@]+)@/, ':****@');
-    console.log('🔍 Direct connection string:', sanitizedConnectionString);
-    
-    const poolConfig: pg.PoolConfig = {
-      connectionString: directConnectionString,
-      max: 3,
-      min: 0,
-      connectionTimeoutMillis: 60000,
-      idleTimeoutMillis: 300000,
-      allowExitOnIdle: true,
-      query_timeout: 60000,
-      statement_timeout: 60000,
-      ssl: {
-        rejectUnauthorized: false,
-        // Railway-specific SSL configuration
-        checkServerIdentity: () => undefined,
-        secureProtocol: 'TLSv1_2_method'
-      }
-    };
-    
-    console.log('🔍 Using direct connection with IPv4-preferred DNS resolution');
-    return new pg.Pool(poolConfig);
+    try {
+      // Manually resolve hostname to IPv4 address
+      console.log('🔍 Attempting manual IPv4 resolution...');
+      const ipv4Address = await lookupIPv4Only(originalHost);
+      
+      // Replace hostname with resolved IPv4 address
+      url.hostname = ipv4Address;
+      const ipv4ConnectionString = url.toString();
+      
+      console.log('🔍 Successful IPv4 resolution:');
+      console.log('🔍 Original hostname:', originalHost);
+      console.log('🔍 Resolved IPv4 address:', ipv4Address);
+      const sanitizedConnectionString = ipv4ConnectionString.replace(/:([^:@]+)@/, ':****@');
+      console.log('🔍 IPv4 connection string:', sanitizedConnectionString);
+      
+      const poolConfig: pg.PoolConfig = {
+        connectionString: ipv4ConnectionString,
+        max: 3,
+        min: 0,
+        connectionTimeoutMillis: 60000,
+        idleTimeoutMillis: 300000,
+        allowExitOnIdle: true,
+        query_timeout: 60000,
+        statement_timeout: 60000,
+        ssl: {
+          rejectUnauthorized: false,
+          // Use original hostname for SSL verification
+          servername: originalHost,
+          checkServerIdentity: () => undefined,
+          secureProtocol: 'TLSv1_2_method'
+        }
+      };
+      
+      console.log('🔍 Using manually resolved IPv4 address for connection');
+      return new pg.Pool(poolConfig);
+      
+    } catch (ipv4Error) {
+      console.error('❌ Manual IPv4 resolution failed:', ipv4Error);
+      console.log('🔍 Falling back to original connection string');
+      
+      // Fallback to original connection string
+      const fallbackConnectionString = connectionString;
+      const sanitizedFallback = fallbackConnectionString.replace(/:([^:@]+)@/, ':****@');
+      console.log('🔍 Fallback connection string:', sanitizedFallback);
+      
+      const fallbackPoolConfig: pg.PoolConfig = {
+        connectionString: fallbackConnectionString,
+        max: 3,
+        min: 0,
+        connectionTimeoutMillis: 60000,
+        idleTimeoutMillis: 300000,
+        allowExitOnIdle: true,
+        query_timeout: 60000,
+        statement_timeout: 60000,
+        ssl: {
+          rejectUnauthorized: false,
+          checkServerIdentity: () => undefined,
+          secureProtocol: 'TLSv1_2_method'
+        }
+      };
+      
+      return new pg.Pool(fallbackPoolConfig);
+    }
   }
   
   // For non-Supabase databases, try DNS resolution approach
