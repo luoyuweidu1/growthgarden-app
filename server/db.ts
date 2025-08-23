@@ -101,9 +101,13 @@ async function createDatabaseClient() {
     url.hostname = poolerHost;
     url.port = '6543'; // Supavisor transaction mode port
     url.username = poolerUsername;
+    
+    // Remove sslmode parameter and let the pool config handle SSL
+    url.searchParams.delete('sslmode');
     const ipv4ConnectionString = url.toString();
     
     console.log('🔍 Using Supavisor IPv4 pooler endpoint (transaction mode)');
+    console.log('🔍 SSL mode removed from connection string');
     const sanitizedConnectionString = ipv4ConnectionString.replace(/:([^:@]+)@/, ':****@');
     console.log('🔍 IPv4 connection string:', sanitizedConnectionString);
     
@@ -118,9 +122,9 @@ async function createDatabaseClient() {
       statement_timeout: 60000,
       ssl: {
         rejectUnauthorized: false,
-        // For Supavisor pooler, we need to handle SSL differently
-        ca: undefined, // Don't verify CA for pooler connections
-        checkServerIdentity: () => undefined // Skip server identity verification
+        // Disable all SSL verification for pooler connections
+        checkServerIdentity: () => undefined,
+        secureProtocol: 'TLSv1_2_method'
       }
     };
     
