@@ -87,15 +87,21 @@ async function createDatabaseClient() {
     const projectRef = originalHost.split('.')[1];
     
     // Supavisor pooler format: postgres.{project_ref}:{password}@aws-0-{region}.pooler.supabase.com:6543
-    // We need to modify both the hostname and username format
     const poolerHost = 'aws-0-us-east-1.pooler.supabase.com'; // Default to us-east-1, most common region
     const originalUsername = url.username;
-    const poolerUsername = `postgres.${projectRef}`;
+    
+    // Check if username is already in correct format (postgres.projectref)
+    let poolerUsername = originalUsername;
+    if (originalUsername === 'postgres') {
+      // If it's just 'postgres', format it for Supavisor
+      poolerUsername = `postgres.${projectRef}`;
+    }
+    // If it's already postgres.something, use as-is
     
     console.log('🔍 Original hostname:', originalHost);
     console.log('🔍 Original username:', originalUsername);
     console.log('🔍 Supavisor pooler hostname:', poolerHost);
-    console.log('🔍 Supavisor username format:', poolerUsername);
+    console.log('🔍 Supavisor username (final):', poolerUsername);
     
     // Create new connection string with Supavisor pooler endpoint
     url.hostname = poolerHost;
