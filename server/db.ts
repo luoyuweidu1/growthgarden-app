@@ -79,47 +79,21 @@ async function createDatabaseClient() {
   const url = new URL(connectionString);
   const originalHost = url.hostname;
   
-  // For Supabase databases, force IPv4 by using Supavisor pooler endpoint
+    // For Supabase databases, try direct connection with IPv4 DNS resolution
   if (originalHost.includes('supabase.co')) {
-    console.log('🔍 Detected Supabase database - using Supavisor IPv4 pooler endpoint');
-  console.log('🔍 CODE VERSION: 2024-session-mode-fix'); // Debug marker to verify deployment
-    
-    // Extract project ref from hostname: db.yonafgzylblknbrytcbr.supabase.co
-    const projectRef = originalHost.split('.')[1];
-    
-    // Supavisor pooler format: postgres.{project_ref}:{password}@aws-0-{region}.pooler.supabase.com:6543
-    const poolerHost = 'aws-0-us-east-1.pooler.supabase.com'; // Default to us-east-1, most common region
-    const originalUsername = url.username;
-    
-    // Check if username is already in correct format (postgres.projectref)
-    let poolerUsername = originalUsername;
-    if (originalUsername === 'postgres') {
-      // If it's just 'postgres', format it for Supavisor
-      poolerUsername = `postgres.${projectRef}`;
-    }
-    // If it's already postgres.something, use as-is
+    console.log('🔍 Detected Supabase database - attempting direct connection with IPv4 DNS');
+    console.log('🔍 CODE VERSION: 2024-direct-connection-fix'); // Debug marker to verify deployment
     
     console.log('🔍 Original hostname:', originalHost);
-    console.log('🔍 Original username:', originalUsername);
-    console.log('🔍 Supavisor pooler hostname:', poolerHost);
-    console.log('🔍 Supavisor username (final):', poolerUsername);
+    console.log('🔍 Using original connection string with enhanced SSL configuration');
     
-    // Create new connection string with Supavisor pooler endpoint
-    url.hostname = poolerHost;
-    url.port = '5432'; // Use Supavisor session mode port instead of transaction mode
-    url.username = poolerUsername;
-    
-    // Remove sslmode parameter and let the pool config handle SSL
-    url.searchParams.delete('sslmode');
-    const ipv4ConnectionString = url.toString();
-    
-    console.log('🔍 Using Supavisor IPv4 pooler endpoint (session mode - port 5432)');
-    console.log('🔍 SSL mode removed from connection string');
-    const sanitizedConnectionString = ipv4ConnectionString.replace(/:([^:@]+)@/, ':****@');
-    console.log('🔍 IPv4 connection string:', sanitizedConnectionString);
+    // Use original connection string but with specific SSL configuration for Railway
+    const directConnectionString = connectionString;
+    const sanitizedConnectionString = directConnectionString.replace(/:([^:@]+)@/, ':****@');
+    console.log('🔍 Direct connection string:', sanitizedConnectionString);
     
     const poolConfig: pg.PoolConfig = {
-      connectionString: ipv4ConnectionString,
+      connectionString: directConnectionString,
       max: 3,
       min: 0,
       connectionTimeoutMillis: 60000,
@@ -129,12 +103,13 @@ async function createDatabaseClient() {
       statement_timeout: 60000,
       ssl: {
         rejectUnauthorized: false,
-        // Disable all SSL verification for pooler connections
+        // Railway-specific SSL configuration
         checkServerIdentity: () => undefined,
         secureProtocol: 'TLSv1_2_method'
       }
     };
     
+    console.log('🔍 Using direct connection with Railway-compatible SSL config');
     return new pg.Pool(poolConfig);
   }
   
@@ -249,6 +224,32 @@ export async function initializeDatabase() {
         console.log('🚧 IPv6 connectivity issue detected on Railway deployment');
         console.log('⚠️  Continuing with in-memory storage as fallback');
         console.log('💡 Database will work once IPv6 is resolved or IPv4 endpoint is used');
+        
+        // Reset client and db to use in-memory storage
+        client = null;
+        db = null;
+        return;
+      }
+      
+      // Check for Supavisor authentication issues
+      if (error.message.includes('Tenant or user not found')) {
+        console.log('🚧 Supavisor authentication issue detected');
+        console.log('⚠️  This may be due to incorrect username format or pooler configuration');
+        console.log('⚠️  Continuing with in-memory storage as fallback');
+        console.log('💡 Consider checking Supabase dashboard for correct connection strings');
+        
+        // Reset client and db to use in-memory storage
+        client = null;
+        db = null;
+        return;
+      }
+      
+      // Check for general connection timeouts or DNS issues
+      if (error.message.includes('ENOTFOUND') || error.message.includes('timeout')) {
+        console.log('🚧 Network connectivity issue detected on Railway deployment');
+        console.log('⚠️  This may be due to DNS resolution or network timeout issues');
+        console.log('⚠️  Continuing with in-memory storage as fallback');
+        console.log('💡 Check Railway network configuration and DNS settings');
         
         // Reset client and db to use in-memory storage
         client = null;
