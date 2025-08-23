@@ -117,7 +117,10 @@ async function createDatabaseClient() {
       query_timeout: 60000,
       statement_timeout: 60000,
       ssl: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        // For Supavisor pooler, we need to handle SSL differently
+        ca: undefined, // Don't verify CA for pooler connections
+        checkServerIdentity: () => undefined // Skip server identity verification
       }
     };
     

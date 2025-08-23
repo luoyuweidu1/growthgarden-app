@@ -1,5 +1,5 @@
-# Use Node.js 18 official image
-FROM node:18-alpine
+# Use Node.js 20 official image (18 is deprecated for Supabase)
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
