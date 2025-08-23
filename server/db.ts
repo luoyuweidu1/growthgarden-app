@@ -79,15 +79,15 @@ async function createDatabaseClient() {
   const url = new URL(connectionString);
   const originalHost = url.hostname;
   
-    // For Supabase databases, use direct connection with aggressive IPv4 DNS override
+    // For Supabase databases, use direct connection with IPv4 DNS preference
   if (originalHost.includes('supabase.co')) {
-    console.log('🔍 Detected Supabase database - using direct connection with DNS override');
-    console.log('🔍 CODE VERSION: 2024-dns-override-fix'); // Debug marker to verify deployment
+    console.log('🔍 Detected Supabase database - using direct connection with IPv4 preference');
+    console.log('🔍 CODE VERSION: 2024-ipv4-preference-fix'); // Debug marker to verify deployment
     
     console.log('🔍 Original hostname:', originalHost);
-    console.log('🔍 DNS override will force IPv4 resolution for this hostname');
+    console.log('🔍 DNS configuration set to prefer IPv4 resolution');
     
-    // Use original connection string - DNS override will handle IPv4 resolution
+    // Use original connection string with IPv4 preference from DNS configuration
     const directConnectionString = connectionString;
     const sanitizedConnectionString = directConnectionString.replace(/:([^:@]+)@/, ':****@');
     console.log('🔍 Direct connection string:', sanitizedConnectionString);
@@ -109,7 +109,7 @@ async function createDatabaseClient() {
       }
     };
     
-    console.log('🔍 Using direct connection - IPv4 resolution enforced by DNS override');
+    console.log('🔍 Using direct connection with IPv4-preferred DNS resolution');
     return new pg.Pool(poolConfig);
   }
   
