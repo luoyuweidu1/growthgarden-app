@@ -6,19 +6,6 @@ console.log('🔧 Configuring DNS to force IPv4 resolution...');
 // Set IPv4 as the default resolution order
 dns.setDefaultResultOrder('ipv4first');
 
-// Override DNS lookup to completely force IPv4
-const originalLookup = dns.lookup;
-(dns as any).lookup = (hostname: string, options: any, callback?: any) => {
-  if (typeof options === 'function') {
-    callback = options;
-    options = {};
-  }
-  options = options || {};
-  options.family = 4; // Force IPv4
-  console.log(`🔍 DNS Lookup forced to IPv4 for hostname: ${hostname}`);
-  return originalLookup(hostname, options, callback);
-};
-
 console.log('✅ DNS configuration complete - all lookups will use IPv4');
 
 import express from "express";
