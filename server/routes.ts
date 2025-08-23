@@ -497,9 +497,34 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     return storage;
   }
 
-  // Health check endpoint
+  // Health check endpoint with storage status
   app.get("/api/health", (_req, res) => {
-    res.status(200).json({ status: "ok", message: "API is healthy" });
+    const { getDb } = require('./db');
+    const isDbConnected = !!getDb();
+    
+    res.status(200).json({ 
+      status: "ok", 
+      message: "API is healthy",
+      storage: {
+        type: isDbConnected ? "database" : "memory",
+        persistent: isDbConnected,
+        warning: isDbConnected ? null : "Data will not persist between server restarts"
+      },
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Storage status endpoint for frontend to check storage type
+  app.get("/api/storage-status", (_req, res) => {
+    const { getDb } = require('./db');
+    const isDbConnected = !!getDb();
+    
+    res.json({
+      type: isDbConnected ? "database" : "memory",
+      persistent: isDbConnected,
+      connected: isDbConnected,
+      warning: isDbConnected ? null : "Your data is stored in memory and will not persist between server restarts. Database connection issues detected."
+    });
   });
 
   // Test endpoint to verify routing is working

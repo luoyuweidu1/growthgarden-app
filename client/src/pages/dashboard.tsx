@@ -14,6 +14,7 @@ import { ActionItem } from "@/components/action-item";
 import { WeeklyReflectionReport } from "@/components/weekly-reflection-report";
 
 import { DailyHabitsCheckin } from "@/components/daily-habits-checkin";
+import { StorageStatusBanner } from "@/components/storage-status-banner";
 import { apiRequest } from "@/lib/queryClient";
 import type { Goal, Action, Achievement } from "@shared/schema";
 import { calculateTreeHealth } from "@/lib/tree-health";
@@ -161,6 +162,9 @@ export default function Dashboard() {
             <p className="text-sage-600 text-lg max-w-md mx-auto">{t('welcome.subtitle')}</p>
           </div>
         </div>
+
+        {/* Storage Status Banner */}
+        <StorageStatusBanner />
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
