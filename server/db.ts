@@ -53,107 +53,29 @@ function parseConnectionString(connString: string) {
   };
 }
 
-// Resolve hostname to IPv4 address
-async function resolveToIPv4(hostname: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    dns.lookup(hostname, { family: 4 }, (err, address) => {
-      if (err) {
-        console.error(`❌ Failed to resolve ${hostname} to IPv4:`, err);
-        reject(err);
-      } else {
-        console.log(`🔍 Resolved ${hostname} to IPv4: ${address}`);
-        resolve(address);
-      }
-    });
-  });
-}
 
 // Create postgres client with explicit configuration for better control
-async function createDatabaseClient() {
+function createDatabaseClient() {
   if (!connectionString) return null;
   
   console.log('🔍 Attempting to create database client...');
   
-  // Determine database provider
-  const isSupabase = connectionString.includes('supabase.co');
-  const isRailway = connectionString.includes('railway');
-  
-  let poolConfig: pg.PoolConfig;
-  
-  if (isSupabase) {
-    // For Supabase, use explicit configuration for better control
-    console.log('🔍 Using explicit Supabase configuration');
-    const parsed = parseConnectionString(connectionString);
-    
-    // Resolve hostname to IPv4 to bypass IPv6 issues
-    let resolvedHost: string;
-    try {
-      resolvedHost = await resolveToIPv4(parsed.host);
-      console.log('🔍 Using IPv4 address instead of hostname');
-    } catch (error) {
-      console.log('⚠️ Failed to resolve to IPv4, using hostname as fallback');
-      resolvedHost = parsed.host;
+  // Use connection string approach with forced IPv4 DNS (set globally)
+  const poolConfig: pg.PoolConfig = {
+    connectionString: connectionString,
+    max: 3,
+    min: 0,
+    connectionTimeoutMillis: 60000,
+    idleTimeoutMillis: 300000,
+    allowExitOnIdle: true,
+    query_timeout: 60000,
+    statement_timeout: 60000,
+    ssl: {
+      rejectUnauthorized: false
     }
-    
-    poolConfig = {
-      // Explicit connection parameters for Supabase
-      host: resolvedHost, // Use resolved IPv4 address
-      port: parsed.port,
-      database: parsed.database,
-      user: parsed.user,
-      password: parsed.password,
-      
-      // SSL configuration for Supabase
-      ssl: {
-        rejectUnauthorized: false // Required for Supabase
-      },
-      
-      // Network configuration - Force IPv4
-      keepAlive: true,
-      keepAliveInitialDelayMillis: 0,
-      family: 4, // Force IPv4 resolution
-      
-      // Pool settings optimized for Supabase
-      max: 3, // Supabase pooler works better with fewer connections
-      min: 0, // Allow scaling to zero
-      connectionTimeoutMillis: 60000, // Longer timeout for Supabase
-      idleTimeoutMillis: 300000, // 5 minutes for Supabase
-      allowExitOnIdle: true,
-      
-      // Query timeouts
-      query_timeout: 60000,
-      statement_timeout: 60000,
-    } as pg.PoolConfig;
-    
-    console.log('🔍 Supabase config - Host:', resolvedHost);
-    console.log('🔍 Supabase config - Port:', parsed.port);
-    console.log('🔍 Supabase config - Database:', parsed.database);
-    console.log('🔍 Supabase config - User:', parsed.user);
-    console.log('🔍 IPv4 forced with family: 4');
-    
-  } else {
-    // Fallback to connection string for non-Supabase databases
-    console.log('🔍 Using connection string for non-Supabase database');
-    poolConfig = {
-      connectionString: connectionString,
-      family: 4, // Force IPv4 resolution for all databases
-      max: isRailway ? 5 : 3,
-      min: 0,
-      connectionTimeoutMillis: 30000,
-      idleTimeoutMillis: 600000,
-      allowExitOnIdle: true,
-      query_timeout: 60000,
-      statement_timeout: 60000,
-    };
-    
-    // Add SSL for production
-    if (process.env.NODE_ENV === 'production') {
-      poolConfig.ssl = {
-        rejectUnauthorized: false,
-      };
-    }
-  }
+  };
   
+  console.log('🔍 Using connection string with global IPv4 DNS override');
   console.log('🔍 Pool config (SSL):', poolConfig.ssl);
   return new pg.Pool(poolConfig);
 }
@@ -173,7 +95,7 @@ export { client, db };
 export async function initializeDatabase() {
   // Create database client first
   if (!client) {
-    client = await createDatabaseClient();
+    client = createDatabaseClient();
     if (client) {
       db = drizzle(client, { schema });
     }

@@ -3,6 +3,9 @@ import * as dns from 'dns';
 
 console.log('🔧 Configuring DNS to force IPv4 resolution...');
 
+// Set environment variable to force IPv4
+process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --dns-result-order=ipv4first';
+
 // Set IPv4 as the default resolution order
 dns.setDefaultResultOrder('ipv4first');
 
