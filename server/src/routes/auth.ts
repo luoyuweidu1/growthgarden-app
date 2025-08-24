@@ -5,6 +5,7 @@ import { generateToken } from '../utils/auth.js';
 import { SessionUser } from '../types/index.js';
 import { prisma } from '../utils/database.js';
 import { validateBody } from '../middleware/validation.js';
+import { authenticateToken, AuthenticatedRequest } from '../middleware/auth.js';
 import { z } from 'zod';
 
 const router = express.Router();
@@ -156,16 +157,40 @@ router.get('/github/callback',
 );
 
 // Get current user (for checking auth status)
-router.get('/me', (req, res) => {
-  if (req.user) {
-    const user = req.user as SessionUser;
-    const token = generateToken(user);
+router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        provider: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const sessionUser: SessionUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name || undefined,
+      avatarUrl: user.avatarUrl || undefined,
+      provider: user.provider,
+    };
+
+    const token = generateToken(sessionUser);
     res.json({
-      user,
+      user: sessionUser,
       token
     });
-  } else {
-    res.status(401).json({ error: 'Not authenticated' });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
 
