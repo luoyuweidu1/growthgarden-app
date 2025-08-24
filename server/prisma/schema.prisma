@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  provider  String   @default("email") // "email", "google", "github"
+  providerId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  goals        Goal[]
+  actions      Action[]
+  achievements UserAchievement[]
+
+  @@map("users")
+}
+
+model Goal {
+  id             String    @id @default(cuid())
+  userId         String
+  name           String
+  description    String?
+  plantType      String    @default("sprout") // "sprout", "herb", "tree", "flower"
+  timelineMonths Int       @default(3)
+  
+  // Progress tracking
+  currentLevel   Int       @default(1)
+  currentXP      Int       @default(0)
+  maxXP          Int       @default(100)
+  status         String    @default("active") // "active", "completed", "withered", "paused"
+  
+  // Health system
+  lastWatered    DateTime  @default(now())
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actions Action[]
+
+  @@map("goals")
+}
+
+model Action {
+  id          String    @id @default(cuid())
+  userId      String
+  goalId      String
+  title       String
+  description String?
+  status      String    @default("pending") // "pending", "in_progress", "completed", "cancelled"
+  priority    String    @default("medium") // "low", "medium", "high"
+  dueDate     DateTime?
+  
+  // XP reward for completing this action
+  xpReward    Int       @default(10)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@map("actions")
+}
+
+model Achievement {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String
+  icon        String @default("🏆")
+  category    String @default("general") // "goals", "actions", "streaks", "levels"
+  
+  // Unlock conditions
+  condition   String // JSON string describing unlock condition
+  
+  createdAt   DateTime @default(now())
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}

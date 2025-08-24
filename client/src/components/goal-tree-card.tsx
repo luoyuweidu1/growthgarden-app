@@ -4,7 +4,24 @@ import { calculateTreeHealth } from "@/lib/tree-health";
 import { cn } from "@/lib/utils";
 import { GoalActionsModal } from "./goal-actions-modal";
 import { useState } from "react";
-import type { Goal, Action } from "@shared/schema";
+// Define types locally since we removed shared schema
+interface Goal {
+  id: string;
+  name: string;
+  plantType: string;
+  currentLevel?: number;
+  currentXP?: number;
+  maxXP?: number;
+  status?: string;
+  lastWatered?: string | Date;
+}
+
+interface Action {
+  id: string;
+  goalId: string;
+  title: string;
+  status: string;
+}
 
 interface GoalTreeCardProps {
   goal: Goal;

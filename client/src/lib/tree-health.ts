@@ -5,9 +5,39 @@ export interface TreeHealth {
   daysSinceWatered: number;
 }
 
-export function calculateTreeHealth(lastWatered: Date | string): TreeHealth {
+export function calculateTreeHealth(lastWatered: Date | string | null | undefined): TreeHealth {
   const now = new Date();
+  
+  // If no lastWatered date, assume it was watered recently for demo purposes
+  if (!lastWatered) {
+    const recentDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 day ago
+    const hoursSinceWatered = 24;
+    const daysSinceWatered = 1;
+    
+    return {
+      status: 'healthy',
+      hoursUntilDeath: 168 - hoursSinceWatered,
+      hoursUntilWarning: 72 - hoursSinceWatered,
+      daysSinceWatered,
+    };
+  }
+  
   const lastWateredDate = typeof lastWatered === 'string' ? new Date(lastWatered) : lastWatered;
+  
+  // Check if the date is valid
+  if (isNaN(lastWateredDate.getTime())) {
+    // Invalid date, treat as recently watered
+    const hoursSinceWatered = 24;
+    const daysSinceWatered = 1;
+    
+    return {
+      status: 'healthy',
+      hoursUntilDeath: 168 - hoursSinceWatered,
+      hoursUntilWarning: 72 - hoursSinceWatered,
+      daysSinceWatered,
+    };
+  }
+  
   const hoursSinceWatered = (now.getTime() - lastWateredDate.getTime()) / (1000 * 60 * 60);
   const daysSinceWatered = Math.floor(hoursSinceWatered / 24);
   

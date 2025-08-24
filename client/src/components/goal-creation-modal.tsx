@@ -11,7 +11,13 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth-provider";
 import { cn } from "@/lib/utils";
-import type { InsertGoal } from "@shared/schema";
+// Define the goal type locally since we removed the shared schema
+interface InsertGoal {
+  name: string;
+  description?: string;
+  plantType: string;
+  timelineMonths: number;
+}
 
 interface GoalCreationModalProps {
   isOpen: boolean;
@@ -49,10 +55,20 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
       return result;
     },
     onSuccess: (newGoal) => {
-      console.log('🌱 Invalidating queries after goal creation');
+      console.log('🌱 Goal creation success, new goal:', newGoal);
+      console.log('🌱 Current query cache state:', queryClient.getQueryData(["/api/goals"]));
+      
+      // Force invalidate and refetch
+      console.log('🌱 Invalidating and refetching goals query...');
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
-      // Also refetch the goals query to ensure UI updates
       queryClient.refetchQueries({ queryKey: ["/api/goals"] });
+      
+      // Also try to manually update the cache
+      const currentGoals = queryClient.getQueryData(["/api/goals"]) as any[] || [];
+      console.log('🌱 Current goals in cache:', currentGoals.length);
+      queryClient.setQueryData(["/api/goals"], [...currentGoals, newGoal]);
+      console.log('🌱 Updated goals in cache:', [...currentGoals, newGoal]);
+      
       toast({
         title: "Goal created!",
         description: "Your new goal has been planted in your garden.",

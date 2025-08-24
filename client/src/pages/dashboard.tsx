@@ -16,7 +16,45 @@ import { WeeklyReflectionReport } from "@/components/weekly-reflection-report";
 import { DailyHabitsCheckin } from "@/components/daily-habits-checkin";
 import { StorageStatusBanner } from "@/components/storage-status-banner";
 import { apiRequest } from "@/lib/queryClient";
-import type { Goal, Action, Achievement } from "@shared/schema";
+// Define types locally since we removed shared schema
+interface Goal {
+  id: string;
+  name: string;
+  title?: string;
+  plantType: string;
+  currentLevel?: number;
+  currentXP?: number;
+  maxXP?: number;
+  status?: string;
+  lastWatered?: string | Date;
+  description?: string;
+  timelineMonths?: number;
+  progress?: number;
+  category?: string;
+  priority?: string;
+  created_at?: string;
+  target_date?: string;
+  user_id?: string;
+}
+
+interface Action {
+  id: string;
+  goalId: string;
+  title: string;
+  status: string;
+  description?: string;
+  priority?: string;
+  created_at?: string;
+  due_date?: string;
+  user_id?: string;
+}
+
+interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  unlocked: boolean;
+}
 import { calculateTreeHealth } from "@/lib/tree-health";
 import { useAuth } from "@/components/auth-provider";
 

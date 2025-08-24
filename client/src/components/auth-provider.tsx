@@ -1,29 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-console.log('🔍 Supabase Client: Initializing with:', {
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseAnonKey,
-  url: supabaseUrl?.substring(0, 30) + '...',
-  key: supabaseAnonKey?.substring(0, 20) + '...'
-});
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are required');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-console.log('🔍 Supabase Client: Created successfully');
+import { setAuthToken, removeAuthToken, apiRequest } from '../lib/queryClient';
 
 interface User {
   id: string;
   email: string;
   name?: string;
   avatarUrl?: string;
+  provider?: string;
 }
 
 interface AuthContextType {
@@ -33,121 +16,90 @@ interface AuthContextType {
   signUp: (email: string, password: string, name?: string) => Promise<void>;
   signOut: () => Promise<void>;
   getAuthToken: () => Promise<string | null>;
+  loginWithGoogle: () => void;
+  loginWithGitHub: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔍 AuthProvider: Initializing...');
+    // Check for token in URL (OAuth callback)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
     
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        console.log('🔍 AuthProvider: Getting initial session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('🔍 AuthProvider: Error getting session:', error);
-          setLoading(false);
-          return;
-        }
-        
-        console.log('🔍 AuthProvider: Session result:', { hasSession: !!session, user: session?.user?.email });
-        
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email!,
-            name: session.user.user_metadata?.name,
-            avatarUrl: session.user.user_metadata?.avatar_url,
-          });
-        }
-        setLoading(false);
-      } catch (error) {
-        console.error('🔍 AuthProvider: Exception getting session:', error);
-        setLoading(false);
-      }
-    };
+    if (token) {
+      setAuthToken(token);
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
-    getInitialSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔍 AuthProvider: Auth state change:', { event, hasSession: !!session });
-        
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email!,
-            name: session.user.user_metadata?.name,
-            avatarUrl: session.user.user_metadata?.avatar_url,
-          });
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    // Set up automatic token refresh
-    const refreshInterval = setInterval(async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.expires_at) {
-          const expiresIn = session.expires_at * 1000 - Date.now();
-          // Refresh if token expires within 10 minutes
-          if (expiresIn < 10 * 60 * 1000) {
-            console.log('🔄 Proactive token refresh...');
-            await supabase.auth.refreshSession();
-          }
-        }
-      } catch (error) {
-        console.error('🔄 Proactive refresh error:', error);
-      }
-    }, 5 * 60 * 1000); // Check every 5 minutes
-
-    return () => {
-      subscription.unsubscribe();
-      clearInterval(refreshInterval);
-    };
+    // Check if user is already authenticated
+    checkAuthStatus();
   }, []);
 
+  const checkAuthStatus = async () => {
+    const token = localStorage.getItem('auth_token');
+    
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await apiRequest('GET', '/api/auth/me');
+      const data = await response.json();
+      
+      if (data.user) {
+        setUser(data.user);
+        if (data.token) {
+          setAuthToken(data.token); // Refresh token if provided
+        }
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      removeAuthToken();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
+    // For now, redirect to OAuth (we didn't implement email/password)
+    throw new Error('Email/password login not implemented. Please use Google or GitHub.');
   };
 
   const signUp = async (email: string, password: string, name?: string) => {
-    console.log('Attempting signup with:', { email, name });
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-        },
-      },
-    });
-    console.log('Signup response:', { data, error });
-    if (error) throw error;
+    // For now, redirect to OAuth (we didn't implement email/password)
+    throw new Error('Email/password signup not implemented. Please use Google or GitHub.');
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      await apiRequest('POST', '/api/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      removeAuthToken();
+      setUser(null);
+    }
   };
 
   const getAuthToken = async (): Promise<string | null> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
+    return localStorage.getItem('auth_token');
+  };
+
+  const loginWithGoogle = () => {
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
+  };
+
+  const loginWithGitHub = () => {
+    window.location.href = `${API_BASE_URL}/api/auth/github`;
   };
 
   const value = {
@@ -157,6 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
     getAuthToken,
+    loginWithGoogle,
+    loginWithGitHub,
   };
 
   return (
@@ -172,4 +126,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}
