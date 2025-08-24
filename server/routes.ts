@@ -502,6 +502,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     const { getDb } = require('./db');
     const isDbConnected = !!getDb();
     
+    // Check environment variables
+    const hasDbUrl = !!process.env.DATABASE_URL;
+    const hasSupabaseUrl = !!process.env.SUPABASE_DB_URL;
+    
     res.status(200).json({ 
       status: "ok", 
       message: "API is healthy",
@@ -509,6 +513,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         type: isDbConnected ? "database" : "memory",
         persistent: isDbConnected,
         warning: isDbConnected ? null : "Data will not persist between server restarts"
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        hasDbUrl,
+        hasSupabaseUrl,
+        dbStatus: isDbConnected ? "connected" : "not connected"
       },
       timestamp: new Date().toISOString()
     });
@@ -520,9 +530,29 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const userId = (req as any).userId;
       console.log("🔍 DEBUG ENDPOINT - User ID:", userId);
       
-      const { db } = require('./db');
+      // Check environment variables
+      const hasDbUrl = !!process.env.DATABASE_URL;
+      const hasSupabaseUrl = !!process.env.SUPABASE_DB_URL;
+      console.log("🔍 DEBUG ENDPOINT - Environment check:", {
+        hasDbUrl,
+        hasSupabaseUrl,
+        nodeEnv: process.env.NODE_ENV
+      });
+      
+      const { getDb } = require('./db');
+      const db = getDb();
+      console.log("🔍 DEBUG ENDPOINT - Database available:", !!db);
+      
       if (!db) {
-        return res.json({ error: "Database not available" });
+        return res.json({ 
+          error: "Database not available",
+          environmentCheck: {
+            hasDbUrl,
+            hasSupabaseUrl,
+            nodeEnv: process.env.NODE_ENV
+          },
+          suggestion: "Database connection failed - check environment variables"
+        });
       }
       
       const { goals: goalsTable } = require('@shared/schema');
