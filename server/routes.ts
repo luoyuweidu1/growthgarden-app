@@ -570,6 +570,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     try {
       const userId = (req as any).userId;
       console.log("🔍 GET /api/goals - User ID from auth:", userId);
+      console.log("🔍 GET /api/goals - User ID type:", typeof userId);
+      console.log("🔍 GET /api/goals - User ID length:", userId?.length);
       
       // Test database connection
       const { db } = require('./db');
@@ -580,7 +582,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         const { goals: goalsTable } = require('@shared/schema');
         const allGoals = await db.select().from(goalsTable);
         console.log("🔍 ALL goals in database (any user):", allGoals.length);
-        console.log("🔍 ALL goals data:", JSON.stringify(allGoals, null, 2));
+        
+        // Log each goal's user ID for comparison
+        allGoals.forEach((goal: any, index: number) => {
+          console.log(`🔍 Goal ${index + 1}: ID=${goal.id}, UserID="${goal.userId}", UserID_type=${typeof goal.userId}, UserID_length=${goal.userId?.length}`);
+          console.log(`🔍 Goal ${index + 1}: UserID matches current? ${goal.userId === userId}`);
+        });
         
         const userGoals = allGoals.filter((g: any) => g.userId === userId);
         console.log("🔍 Goals for current user:", userGoals.length);

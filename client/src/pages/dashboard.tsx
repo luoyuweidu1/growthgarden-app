@@ -365,8 +365,12 @@ export default function Dashboard() {
                 size="sm" 
                 onClick={async () => {
                   console.log('🔬 DEBUG DB BUTTON CLICKED - Checking database contents...');
+                  console.log('🔬 Button click detected, starting API call...');
                   try {
+                    console.log('🔬 Making request to /api/debug/goals...');
                     const response = await apiRequest("GET", "/api/debug/goals");
+                    console.log('🔬 Response received:', response);
+                    console.log('🔬 Response status:', response.status);
                     const data = await response.json();
                     console.log('🔬 Database debug response:', data);
                     console.log('🔬 Current User ID:', data.currentUserId);
@@ -376,6 +380,12 @@ export default function Dashboard() {
                     console.log('🔬 User goals:', data.userGoals);
                   } catch (error) {
                     console.error('🔬 Database debug error:', error);
+                    console.error('🔬 Error type:', typeof error);
+                    console.error('🔬 Error details:', {
+                      name: (error as Error).name,
+                      message: (error as Error).message,
+                      stack: (error as Error).stack
+                    });
                   }
                 }}
                 className="organic-shape px-4 py-2 border-indigo-500 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all duration-300"
