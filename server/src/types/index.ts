@@ -49,6 +49,22 @@ export const UpdateActionSchema = z.object({
   xpReward: z.number().int().min(1).max(100).optional(),
 });
 
+// Daily Habit schemas
+export const CreateHabitSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  eatHealthy: z.boolean().default(false),
+  exercise: z.boolean().default(false),
+  sleepBefore11pm: z.boolean().default(false),
+  notes: z.string().optional(),
+});
+
+export const UpdateHabitSchema = z.object({
+  eatHealthy: z.boolean().optional(),
+  exercise: z.boolean().optional(),
+  sleepBefore11pm: z.boolean().optional(),
+  notes: z.string().optional(),
+});
+
 // Type exports
 export type CreateUser = z.infer<typeof CreateUserSchema>;
 export type UpdateUser = z.infer<typeof UpdateUserSchema>;
@@ -56,6 +72,8 @@ export type CreateGoal = z.infer<typeof CreateGoalSchema>;
 export type UpdateGoal = z.infer<typeof UpdateGoalSchema>;
 export type CreateAction = z.infer<typeof CreateActionSchema>;
 export type UpdateAction = z.infer<typeof UpdateActionSchema>;
+export type CreateHabit = z.infer<typeof CreateHabitSchema>;
+export type UpdateHabit = z.infer<typeof UpdateHabitSchema>;
 
 // Express session user type
 export interface SessionUser {
