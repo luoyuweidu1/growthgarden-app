@@ -252,6 +252,38 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 size="sm" 
+                onClick={async () => {
+                  console.log('🧪 Testing API directly...');
+                  try {
+                    const response = await apiRequest("GET", "/api/goals");
+                    const data = await response.json();
+                    console.log('🧪 Direct API response:', data);
+                    console.log('🧪 Response status:', response.status);
+                    console.log('🧪 Response headers:', Object.fromEntries(response.headers.entries()));
+                  } catch (error) {
+                    console.error('🧪 Direct API error:', error);
+                  }
+                }}
+                className="organic-shape px-4 py-2 border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-all duration-300"
+              >
+                🧪 Test API
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  console.log('🗑️ Clearing all React Query cache...');
+                  queryClient.clear();
+                  console.log('🗑️ Cache cleared, refetching...');
+                  queryClient.refetchQueries();
+                }}
+                className="organic-shape px-4 py-2 border-red-500 text-red-600 hover:bg-red-500 hover:text-white transition-all duration-300"
+              >
+                🗑️ Clear Cache
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
                 onClick={() => setIsExportModalOpen(true)}
                 className="organic-shape px-4 py-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
               >
@@ -266,9 +298,15 @@ export default function Dashboard() {
 
           {/* Debug Info */}
           {process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 p-4 bg-gray-100 rounded text-sm">
-              <strong>Debug Info:</strong> {goals.length} goals loaded
-              {goalsError && <div className="text-red-600">Error: {String(goalsError)}</div>}
+            <div className="mb-4 p-4 bg-gray-100 rounded text-sm space-y-2">
+              <div><strong>Debug Info:</strong></div>
+              <div>Goals: {goals.length} loaded, Loading: {goalsLoading ? 'Yes' : 'No'}</div>
+              <div>Actions: {allActions.length} loaded, Loading: {actionsLoading ? 'Yes' : 'No'}</div>
+              {goalsError && <div className="text-red-600">Goals Error: {String(goalsError)}</div>}
+              {actionsError && <div className="text-red-600">Actions Error: {String(actionsError)}</div>}
+              <div className="text-xs text-gray-600">
+                Query Cache Keys: {JSON.stringify(queryClient.getQueryCache().getAll().map(q => q.queryKey))}
+              </div>
             </div>
           )}
 
