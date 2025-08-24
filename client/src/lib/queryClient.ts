@@ -18,13 +18,33 @@ async function getAuthToken(): Promise<string | null> {
       supabaseAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY
     });
     
-    const { data: { session } } = await supabase.auth.getSession();
+    // First try to get the current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     console.log('🔍 Debug - Session:', {
       hasSession: !!session,
       hasAccessToken: !!session?.access_token,
-      tokenLength: session?.access_token?.length
+      tokenLength: session?.access_token?.length,
+      sessionError: sessionError?.message,
+      expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+      isExpired: session?.expires_at ? Date.now() > session.expires_at * 1000 : null
     });
+    
+    // If no session or token is expired, try to refresh
+    if (!session || !session.access_token || (session.expires_at && Date.now() > session.expires_at * 1000)) {
+      console.log('🔄 Token expired or missing, attempting refresh...');
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error('❌ Token refresh failed:', refreshError.message);
+        return null;
+      }
+      
+      if (refreshedSession?.access_token) {
+        console.log('✅ Token refreshed successfully');
+        return refreshedSession.access_token;
+      }
+    }
     
     return session?.access_token || null;
   } catch (error) {
@@ -36,6 +56,21 @@ async function getAuthToken(): Promise<string | null> {
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    
+    // If it's a 401 error, log additional debug info
+    if (res.status === 401) {
+      console.error('🚫 Authentication failed:', {
+        status: res.status,
+        statusText: res.statusText,
+        response: text,
+        url: res.url
+      });
+      
+      // You might want to redirect to login or show a re-auth modal here
+      // For now, just log the error
+      console.log('💡 Suggestion: User may need to log in again');
+    }
+    
     throw new Error(`${res.status}: ${text}`);
   }
 }
