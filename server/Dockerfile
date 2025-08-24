@@ -1,6 +1,9 @@
 # Use Node.js 18 Alpine for smaller image size
 FROM node:18-alpine
 
+# Install OpenSSL compatibility layer for Prisma
+RUN apk add --no-cache openssl1.1-compat
+
 # Set working directory
 WORKDIR /app
 
