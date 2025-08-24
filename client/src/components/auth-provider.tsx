@@ -94,7 +94,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Set up automatic token refresh
+    const refreshInterval = setInterval(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.expires_at) {
+          const expiresIn = session.expires_at * 1000 - Date.now();
+          // Refresh if token expires within 10 minutes
+          if (expiresIn < 10 * 60 * 1000) {
+            console.log('🔄 Proactive token refresh...');
+            await supabase.auth.refreshSession();
+          }
+        }
+      } catch (error) {
+        console.error('🔄 Proactive refresh error:', error);
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

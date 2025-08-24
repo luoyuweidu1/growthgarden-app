@@ -30,13 +30,17 @@ async function getAuthToken(): Promise<string | null> {
       isExpired: session?.expires_at ? Date.now() > session.expires_at * 1000 : null
     });
     
-    // If no session or token is expired, try to refresh
-    if (!session || !session.access_token || (session.expires_at && Date.now() > session.expires_at * 1000)) {
-      console.log('🔄 Token expired or missing, attempting refresh...');
+    // Check if token is expired or will expire soon (within 5 minutes)
+    const isExpiredOrExpiringSoon = session?.expires_at && (Date.now() > (session.expires_at - 300) * 1000);
+    
+    if (!session || !session.access_token || isExpiredOrExpiringSoon) {
+      console.log('🔄 Token expired/expiring soon or missing, attempting refresh...');
       const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
       
       if (refreshError) {
         console.error('❌ Token refresh failed:', refreshError.message);
+        console.log('💡 Redirecting to login...');
+        window.location.href = '/login';
         return null;
       }
       
