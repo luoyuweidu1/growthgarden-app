@@ -24,22 +24,49 @@ async function getAuthToken(): Promise<string | null> {
     console.log('🔍 Debug - Session:', {
       hasSession: !!session,
       hasAccessToken: !!session?.access_token,
+      hasRefreshToken: !!session?.refresh_token,
       tokenLength: session?.access_token?.length,
       sessionError: sessionError?.message,
       expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
-      isExpired: session?.expires_at ? Date.now() > session.expires_at * 1000 : null
+      isExpired: session?.expires_at ? Date.now() > session.expires_at * 1000 : null,
+      userEmail: session?.user?.email
     });
+    
+    // If no session at all, user needs to log in
+    if (!session) {
+      console.log('❌ No session found - user needs to log in');
+      console.log('💡 Redirecting to login...');
+      window.location.href = '/login';
+      return null;
+    }
     
     // Check if token is expired or will expire soon (within 5 minutes)
     const isExpiredOrExpiringSoon = session?.expires_at && (Date.now() > (session.expires_at - 300) * 1000);
     
-    if (!session || !session.access_token || isExpiredOrExpiringSoon) {
+    if (!session.access_token || isExpiredOrExpiringSoon) {
       console.log('🔄 Token expired/expiring soon or missing, attempting refresh...');
+      console.log('🔄 Refresh token available:', !!session.refresh_token);
+      
+      if (!session.refresh_token) {
+        console.log('❌ No refresh token available - user needs to log in again');
+        console.log('💡 Redirecting to login...');
+        window.location.href = '/login';
+        return null;
+      }
+      
       const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      console.log('🔄 Refresh result:', {
+        hasRefreshedSession: !!refreshedSession,
+        hasNewAccessToken: !!refreshedSession?.access_token,
+        refreshError: refreshError?.message,
+        newTokenLength: refreshedSession?.access_token?.length
+      });
       
       if (refreshError) {
         console.error('❌ Token refresh failed:', refreshError.message);
-        console.log('💡 Redirecting to login...');
+        console.log('💡 Clearing local session and redirecting to login...');
+        await supabase.auth.signOut();
         window.location.href = '/login';
         return null;
       }
@@ -47,12 +74,21 @@ async function getAuthToken(): Promise<string | null> {
       if (refreshedSession?.access_token) {
         console.log('✅ Token refreshed successfully');
         return refreshedSession.access_token;
+      } else {
+        console.log('❌ Refresh succeeded but no new token received');
+        console.log('💡 Redirecting to login...');
+        window.location.href = '/login';
+        return null;
       }
     }
     
-    return session?.access_token || null;
+    console.log('✅ Using existing valid token');
+    return session.access_token;
   } catch (error) {
-    console.error('Error getting auth token:', error);
+    console.error('❌ Error getting auth token:', error);
+    console.log('💡 Clearing session and redirecting to login...');
+    await supabase.auth.signOut();
+    window.location.href = '/login';
     return null;
   }
 }

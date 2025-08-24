@@ -376,13 +376,22 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => {
-                  console.log('🔑 Redirecting to login for re-authentication...');
+                onClick={async () => {
+                  console.log('🔑 Force logout and redirect to login...');
+                  try {
+                    await signOut();
+                  } catch (error) {
+                    console.error('Logout error:', error);
+                  }
+                  // Clear all local storage/session storage that might contain auth data
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  // Force page reload to clear any cached auth state
                   window.location.href = '/login';
                 }}
                 className="organic-shape px-4 py-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white transition-all duration-300"
               >
-                🔑 Re-Login
+                🔑 Force Re-Login
               </Button>
               <Button 
                 variant="outline" 
@@ -408,6 +417,35 @@ export default function Dashboard() {
                 className="organic-shape px-4 py-2 border-purple-500 text-purple-600 hover:bg-purple-500 hover:text-white transition-all duration-300"
               >
                 🔍 Cache Info
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={async () => {
+                  console.log('🔐 AUTH INSPECT - Checking detailed auth state...');
+                  try {
+                    const { supabase } = await import('@/components/auth-provider');
+                    const { data: { session }, error } = await supabase.auth.getSession();
+                    console.log('🔐 Raw Supabase session:', {
+                      hasSession: !!session,
+                      hasAccessToken: !!session?.access_token,
+                      hasRefreshToken: !!session?.refresh_token,
+                      accessTokenLength: session?.access_token?.length,
+                      refreshTokenLength: session?.refresh_token?.length,
+                      expiresAt: session?.expires_at ? new Date(session.expires_at * 1000) : null,
+                      isExpired: session?.expires_at ? Date.now() > session.expires_at * 1000 : false,
+                      minutesUntilExpiry: session?.expires_at ? Math.round((session.expires_at * 1000 - Date.now()) / 60000) : null,
+                      userEmail: session?.user?.email,
+                      userId: session?.user?.id,
+                      error: error?.message
+                    });
+                  } catch (error) {
+                    console.error('🔐 Error checking auth state:', error);
+                  }
+                }}
+                className="organic-shape px-4 py-2 border-orange-500 text-orange-600 hover:bg-orange-500 hover:text-white transition-all duration-300"
+              >
+                🔐 Auth Info
               </Button>
               <Button 
                 variant="outline" 
