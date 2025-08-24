@@ -42,11 +42,17 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
 
   const createGoalMutation = useMutation({
     mutationFn: async (goalData: InsertGoal) => {
+      console.log('🌱 Creating goal:', goalData);
       const response = await apiRequest("POST", "/api/goals", goalData);
-      return response.json();
+      const result = await response.json();
+      console.log('🌱 Goal created successfully:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (newGoal) => {
+      console.log('🌱 Invalidating queries after goal creation');
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      // Also refetch the goals query to ensure UI updates
+      queryClient.refetchQueries({ queryKey: ["/api/goals"] });
       toast({
         title: "Goal created!",
         description: "Your new goal has been planted in your garden.",
@@ -55,9 +61,10 @@ export function GoalCreationModal({ isOpen, onClose }: GoalCreationModalProps) {
       onClose();
     },
     onError: (error) => {
+      console.error('🌱 Goal creation error:', error);
       toast({
         title: "Error",
-        description: "Failed to create goal. Please try again.",
+        description: `Failed to create goal: ${error.message}`,
         variant: "destructive",
       });
     },
