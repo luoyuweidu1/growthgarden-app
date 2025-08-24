@@ -1,10 +1,19 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:frontend",
+  "buildCommand": "npm run build:all",
   "outputDirectory": "dist/public",
   "installCommand": "npm install",
   "framework": "vite",
+  "functions": {
+    "api/*.ts": {
+      "runtime": "@vercel/node"
+    }
+  },
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
@@ -20,5 +29,8 @@
         }
       ]
     }
-  ]
+  ],
+  "env": {
+    "NODE_OPTIONS": "--dns-result-order=ipv4first"
+  }
 } 
