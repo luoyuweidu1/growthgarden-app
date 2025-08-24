@@ -27,8 +27,23 @@ export default function Dashboard() {
   const [isWeeklyReportOpen, setIsWeeklyReportOpen] = useState(false);
 
   const queryClient = useQueryClient();
-  const { signOut } = useAuth();
+  const { signOut, user, loading } = useAuth();
   const { t } = useLanguage();
+
+  // Check if user is authenticated
+  useEffect(() => {
+    console.log('🔐 Dashboard Auth Check:', {
+      hasUser: !!user,
+      userEmail: user?.email,
+      loading
+    });
+    
+    if (!loading && !user) {
+      console.log('❌ No authenticated user found, redirecting to login...');
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+  }, [user, loading]);
 
   const handleLogout = async () => {
     try {
@@ -347,6 +362,17 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 size="sm" 
+                onClick={() => {
+                  console.log('🔑 Redirecting to login for re-authentication...');
+                  window.location.href = '/login';
+                }}
+                className="organic-shape px-4 py-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white transition-all duration-300"
+              >
+                🔑 Re-Login
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
                 onClick={() => setIsExportModalOpen(true)}
                 className="organic-shape px-4 py-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
               >
@@ -363,10 +389,14 @@ export default function Dashboard() {
           {process.env.NODE_ENV === 'development' && (
             <div className="mb-4 p-4 bg-gray-100 rounded text-sm space-y-2">
               <div><strong>Debug Info:</strong></div>
+              <div className={`${user ? 'text-green-600' : 'text-red-600'}`}>
+                Auth: {user ? `✅ ${user.email}` : '❌ Not authenticated'}
+              </div>
               <div>Goals: {goals.length} loaded, Loading: {goalsLoading ? 'Yes' : 'No'}</div>
               <div>Actions: {allActions.length} loaded, Loading: {actionsLoading ? 'Yes' : 'No'}</div>
               {goalsError && <div className="text-red-600">Goals Error: {String(goalsError)}</div>}
               {actionsError && <div className="text-red-600">Actions Error: {String(actionsError)}</div>}
+              {!user && <div className="text-yellow-600 font-semibold">⚠️ Authentication required - click "🔑 Re-Login" button</div>}
               <div className="text-xs text-gray-600">
                 Query Cache Keys: {JSON.stringify(queryClient.getQueryCache().getAll().map(q => q.queryKey))}
               </div>
