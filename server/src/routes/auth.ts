@@ -53,8 +53,8 @@ router.post('/register', validateBody(RegisterSchema), async (req, res) => {
     const sessionUser: SessionUser = {
       id: user.id,
       email: user.email,
-      name: user.name,
-      avatarUrl: user.avatarUrl,
+      name: user.name || undefined,
+      avatarUrl: user.avatarUrl || undefined,
       provider: user.provider,
     };
 
@@ -96,8 +96,8 @@ router.post('/login', validateBody(LoginSchema), async (req, res) => {
     const sessionUser: SessionUser = {
       id: user.id,
       email: user.email,
-      name: user.name,
-      avatarUrl: user.avatarUrl,
+      name: user.name || undefined,
+      avatarUrl: user.avatarUrl || undefined,
       provider: user.provider,
     };
 
