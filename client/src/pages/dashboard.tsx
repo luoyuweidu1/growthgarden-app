@@ -363,6 +363,28 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 size="sm" 
+                onClick={async () => {
+                  console.log('🔬 DEBUG DB BUTTON CLICKED - Checking database contents...');
+                  try {
+                    const response = await apiRequest("GET", "/api/debug/goals");
+                    const data = await response.json();
+                    console.log('🔬 Database debug response:', data);
+                    console.log('🔬 Current User ID:', data.currentUserId);
+                    console.log('🔬 Total goals in database:', data.totalGoalsInDatabase);
+                    console.log('🔬 All goals:', data.allGoals);
+                    console.log('🔬 User goals count:', data.userGoalsCount);
+                    console.log('🔬 User goals:', data.userGoals);
+                  } catch (error) {
+                    console.error('🔬 Database debug error:', error);
+                  }
+                }}
+                className="organic-shape px-4 py-2 border-indigo-500 text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all duration-300"
+              >
+                🔬 Debug DB
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
                 onClick={() => {
                   console.log('🗑️ Clearing all React Query cache...');
                   queryClient.clear();

@@ -514,6 +514,39 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     });
   });
 
+  // Debug endpoint to check database contents (temporary)
+  app.get("/api/debug/goals", authenticateUser, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      console.log("🔍 DEBUG ENDPOINT - User ID:", userId);
+      
+      const { db } = require('./db');
+      if (!db) {
+        return res.json({ error: "Database not available" });
+      }
+      
+      const { goals: goalsTable } = require('@shared/schema');
+      const allGoals = await db.select().from(goalsTable);
+      
+      console.log("🔍 DEBUG ENDPOINT - All goals in database:", allGoals.length);
+      console.log("🔍 DEBUG ENDPOINT - All goals data:", JSON.stringify(allGoals, null, 2));
+      
+      const userGoals = allGoals.filter((g: any) => g.userId === userId);
+      console.log("🔍 DEBUG ENDPOINT - User goals:", userGoals.length);
+      
+      res.json({
+        currentUserId: userId,
+        totalGoalsInDatabase: allGoals.length,
+        allGoals: allGoals,
+        userGoalsCount: userGoals.length,
+        userGoals: userGoals
+      });
+    } catch (error) {
+      console.error("🔍 DEBUG ENDPOINT - Error:", error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // Storage status endpoint for frontend to check storage type
   app.get("/api/storage-status", (_req, res) => {
     const { getDb } = require('./db');
