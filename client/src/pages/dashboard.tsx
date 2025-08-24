@@ -71,6 +71,56 @@ export default function Dashboard() {
     actionsError
   });
 
+  // Automatic API test on mount (only once)
+  useEffect(() => {
+    const testAPI = async () => {
+      console.log('🤖 Automatic API test on dashboard load...');
+      try {
+        const response = await apiRequest("GET", "/api/goals");
+        const data = await response.json();
+        console.log('🤖 Automatic API test - Response:', data);
+        console.log('🤖 Automatic API test - Status:', response.status);
+        console.log('🤖 Automatic API test - Goals count:', data.length);
+      } catch (error) {
+        console.error('🤖 Automatic API test - Error:', error);
+      }
+    };
+    
+    // Only run if not loading to avoid multiple calls
+    if (!goalsLoading && !actionsLoading) {
+      testAPI();
+    }
+  }, [goalsLoading, actionsLoading]); // Run when loading states change
+
+  // Add global debug functions for manual testing
+  useEffect(() => {
+    (window as any).debugGoals = {
+      testAPI: async () => {
+        console.log('🌍 Manual API test from console...');
+        try {
+          const response = await apiRequest("GET", "/api/goals");
+          const data = await response.json();
+          console.log('🌍 Console API test - Response:', data);
+          return data;
+        } catch (error) {
+          console.error('🌍 Console API test - Error:', error);
+          return error;
+        }
+      },
+      refreshGoals: () => {
+        console.log('🌍 Manual refresh from console...');
+        queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+        queryClient.refetchQueries({ queryKey: ["/api/goals"] });
+      },
+      clearCache: () => {
+        console.log('🌍 Manual cache clear from console...');
+        queryClient.clear();
+        queryClient.refetchQueries();
+      }
+    };
+    console.log('🌍 Debug functions available: window.debugGoals.testAPI(), window.debugGoals.refreshGoals(), window.debugGoals.clearCache()');
+  }, [queryClient]);
+
   const { data: achievements = [] } = useQuery<Achievement[]>({
     queryKey: ["/api/achievements"],
   });
@@ -241,9 +291,15 @@ export default function Dashboard() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => {
-                  console.log('🔄 Manual refresh triggered');
-                  queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
-                  queryClient.refetchQueries({ queryKey: ["/api/goals"] });
+                  console.log('🔄 DEBUG BUTTON CLICKED - Manual refresh triggered');
+                  console.log('🔄 QueryClient available:', !!queryClient);
+                  try {
+                    queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+                    queryClient.refetchQueries({ queryKey: ["/api/goals"] });
+                    console.log('🔄 Refresh completed successfully');
+                  } catch (error) {
+                    console.error('🔄 Refresh error:', error);
+                  }
                 }}
                 className="organic-shape px-4 py-2 border-green-500 text-green-600 hover:bg-green-500 hover:text-white transition-all duration-300"
               >
@@ -253,15 +309,22 @@ export default function Dashboard() {
                 variant="outline" 
                 size="sm" 
                 onClick={async () => {
-                  console.log('🧪 Testing API directly...');
+                  console.log('🧪 TEST API BUTTON CLICKED - Testing API directly...');
+                  console.log('🧪 apiRequest function available:', typeof apiRequest);
                   try {
                     const response = await apiRequest("GET", "/api/goals");
+                    console.log('🧪 Response received:', response);
                     const data = await response.json();
                     console.log('🧪 Direct API response:', data);
                     console.log('🧪 Response status:', response.status);
                     console.log('🧪 Response headers:', Object.fromEntries(response.headers.entries()));
                   } catch (error) {
                     console.error('🧪 Direct API error:', error);
+                    console.error('🧪 Error details:', {
+                      name: (error as Error).name,
+                      message: (error as Error).message,
+                      stack: (error as Error).stack
+                    });
                   }
                 }}
                 className="organic-shape px-4 py-2 border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-all duration-300"
