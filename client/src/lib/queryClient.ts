@@ -5,7 +5,9 @@ import { supabase } from '../components/auth-provider';
 function getApiBaseUrl(): string {
   const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
   // Remove trailing slash to avoid double slashes
-  return apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+  const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+  console.log('🌐 API Base URL:', baseUrl, 'from env:', import.meta.env.VITE_API_URL);
+  return baseUrl;
 }
 
 // Get auth token from Supabase

@@ -53,12 +53,22 @@ export default function Dashboard() {
     achievementCheckMutation.mutate();
   }, []);
 
-  const { data: goals = [], isLoading: goalsLoading } = useQuery<Goal[]>({
+  const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useQuery<Goal[]>({
     queryKey: ["/api/goals"],
   });
 
-  const { data: allActions = [], isLoading: actionsLoading } = useQuery<Action[]>({
+  const { data: allActions = [], isLoading: actionsLoading, error: actionsError } = useQuery<Action[]>({
     queryKey: ["/api/actions"],
+  });
+
+  // Debug logging
+  console.log('🏡 Dashboard Debug:', {
+    goalsCount: goals.length,
+    goalsLoading,
+    goalsError,
+    actionsCount: allActions.length,
+    actionsLoading,
+    actionsError
   });
 
   const { data: achievements = [] } = useQuery<Achievement[]>({
@@ -230,6 +240,18 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 size="sm" 
+                onClick={() => {
+                  console.log('🔄 Manual refresh triggered');
+                  queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+                  queryClient.refetchQueries({ queryKey: ["/api/goals"] });
+                }}
+                className="organic-shape px-4 py-2 border-green-500 text-green-600 hover:bg-green-500 hover:text-white transition-all duration-300"
+              >
+                🔄 Debug Refresh
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
                 onClick={() => setIsExportModalOpen(true)}
                 className="organic-shape px-4 py-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
               >
@@ -241,6 +263,14 @@ export default function Dashboard() {
               </Button>
             </div>
           </div>
+
+          {/* Debug Info */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-4 bg-gray-100 rounded text-sm">
+              <strong>Debug Info:</strong> {goals.length} goals loaded
+              {goalsError && <div className="text-red-600">Error: {String(goalsError)}</div>}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
             {goals.map((goal) => (
