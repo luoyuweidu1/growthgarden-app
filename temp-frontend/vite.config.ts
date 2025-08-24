@@ -16,11 +16,11 @@ export default defineConfig({
         ]
       : []),
   ],
-  root: path.resolve(__dirname, "client"),
+  root: __dirname,
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client", "src"),
-      "@assets": path.resolve(__dirname, "attached_assets"),
+      "@": path.resolve(__dirname, "src"),
+      "@assets": path.resolve(__dirname, "../attached_assets"),
     },
   },
   base: "/",
