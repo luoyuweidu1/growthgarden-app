@@ -535,10 +535,15 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Goals routes - require authentication
   app.get("/api/goals", authenticateUser, async (req, res) => {
     try {
+      console.log("🔍 GET /api/goals - User ID from auth:", (req as any).userId);
       const userStorage = getUserStorage(req);
+      console.log("🔍 Got user storage successfully");
       const goals = await userStorage.getGoals();
+      console.log("🔍 Retrieved goals:", goals.length, "goals for user");
+      console.log("🔍 Goals data:", JSON.stringify(goals, null, 2));
       res.json(goals);
     } catch (error) {
+      console.error("🔍 Error fetching goals:", error);
       res.status(500).json({ error: "Failed to fetch goals" });
     }
   });
