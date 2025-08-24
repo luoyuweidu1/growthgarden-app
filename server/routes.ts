@@ -535,12 +535,30 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Goals routes - require authentication
   app.get("/api/goals", authenticateUser, async (req, res) => {
     try {
-      console.log("🔍 GET /api/goals - User ID from auth:", (req as any).userId);
+      const userId = (req as any).userId;
+      console.log("🔍 GET /api/goals - User ID from auth:", userId);
+      
+      // Test database connection
+      const { db } = require('./db');
+      console.log("🔍 Database available:", !!db);
+      
+      if (db) {
+        // Direct database query to check what's actually in the goals table
+        const { goals: goalsTable } = require('@shared/schema');
+        const allGoals = await db.select().from(goalsTable);
+        console.log("🔍 ALL goals in database (any user):", allGoals.length);
+        console.log("🔍 ALL goals data:", JSON.stringify(allGoals, null, 2));
+        
+        const userGoals = allGoals.filter((g: any) => g.userId === userId);
+        console.log("🔍 Goals for current user:", userGoals.length);
+        console.log("🔍 User goals data:", JSON.stringify(userGoals, null, 2));
+      }
+      
       const userStorage = getUserStorage(req);
       console.log("🔍 Got user storage successfully");
       const goals = await userStorage.getGoals();
-      console.log("🔍 Retrieved goals:", goals.length, "goals for user");
-      console.log("🔍 Goals data:", JSON.stringify(goals, null, 2));
+      console.log("🔍 Retrieved goals via storage:", goals.length, "goals for user");
+      console.log("🔍 Storage goals data:", JSON.stringify(goals, null, 2));
       res.json(goals);
     } catch (error) {
       console.error("🔍 Error fetching goals:", error);
