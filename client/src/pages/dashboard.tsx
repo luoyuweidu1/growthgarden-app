@@ -72,6 +72,16 @@ export default function Dashboard() {
     queryKey: ["/api/goals"],
   });
 
+  // Log goals query changes
+  useEffect(() => {
+    console.log('🎯 Goals query state changed:', {
+      goalsCount: goals.length,
+      goalsLoading,
+      goalsError: goalsError?.message,
+      goals: goals.map(g => ({ id: g.id, name: g.name }))
+    });
+  }, [goals, goalsLoading, goalsError]);
+
   const { data: allActions = [], isLoading: actionsLoading, error: actionsError } = useQuery<Action[]>({
     queryKey: ["/api/actions"],
   });
@@ -305,13 +315,17 @@ export default function Dashboard() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => {
+                onClick={async () => {
                   console.log('🔄 DEBUG BUTTON CLICKED - Manual refresh triggered');
                   console.log('🔄 QueryClient available:', !!queryClient);
+                  console.log('🔄 Current goals before refresh:', goals.length);
                   try {
-                    queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
-                    queryClient.refetchQueries({ queryKey: ["/api/goals"] });
-                    console.log('🔄 Refresh completed successfully');
+                    console.log('🔄 Step 1: Invalidating queries...');
+                    await queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+                    console.log('🔄 Step 2: Refetching queries...');
+                    const result = await queryClient.refetchQueries({ queryKey: ["/api/goals"] });
+                    console.log('🔄 Refresh completed successfully:', result);
+                    console.log('🔄 Goals after refresh:', goals.length);
                   } catch (error) {
                     console.error('🔄 Refresh error:', error);
                   }
@@ -369,6 +383,31 @@ export default function Dashboard() {
                 className="organic-shape px-4 py-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white transition-all duration-300"
               >
                 🔑 Re-Login
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  console.log('🔍 CACHE INSPECT - Current React Query state:');
+                  const cache = queryClient.getQueryCache();
+                  const goalsQuery = cache.find({ queryKey: ["/api/goals"] });
+                  console.log('🔍 Goals query in cache:', {
+                    exists: !!goalsQuery,
+                    state: goalsQuery?.state,
+                    data: goalsQuery?.state.data,
+                    dataUpdatedAt: goalsQuery?.state.dataUpdatedAt ? new Date(goalsQuery.state.dataUpdatedAt) : null,
+                    error: goalsQuery?.state.error,
+                    status: goalsQuery?.state.status
+                  });
+                  console.log('🔍 All cache queries:', cache.getAll().map(q => ({ 
+                    key: q.queryKey, 
+                    status: q.state.status,
+                    dataLength: Array.isArray(q.state.data) ? q.state.data.length : 'not array'
+                  })));
+                }}
+                className="organic-shape px-4 py-2 border-purple-500 text-purple-600 hover:bg-purple-500 hover:text-white transition-all duration-300"
+              >
+                🔍 Cache Info
               </Button>
               <Button 
                 variant="outline" 
