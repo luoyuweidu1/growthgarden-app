@@ -32,7 +32,8 @@ app.use(helmet({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // limit each IP to 1000 requests per windowMs (increased for development)
+  message: 'Too many requests from this IP, please try again later.',
 });
 app.use(limiter);
 
@@ -40,6 +41,7 @@ app.use(limiter);
 const allowedOrigins = [
   'http://localhost:5173',
   'https://growthgarden-app-oeuu.vercel.app',
+  'https://growthgarden-frontend-clean.vercel.app',
   'https://growthgarden-app-production-bae7.up.railway.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
@@ -49,11 +51,15 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
+    console.log('CORS request from origin:', origin);
+    
     // Check if the origin is in our allowed list or is a vercel preview URL
     if (allowedOrigins.includes(origin) || origin.includes('vercel.app')) {
+      console.log('CORS allowed for origin:', origin);
       return callback(null, true);
     }
     
+    console.log('CORS blocked for origin:', origin);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
