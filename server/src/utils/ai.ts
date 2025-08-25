@@ -152,12 +152,18 @@ function generateFallbackAnalysis(data: WeeklyData): AIAnalysis {
     const avgXpPerAction = actions.reduce((sum, a) => sum + a.xpReward, 0) / actions.length;
     insights.push(`You completed ${actions.length} actions this week, earning an average of ${Math.round(avgXpPerAction)} XP per action.`);
     
-    const mostActiveGoal = Object.entries(actionsByGoal).reduce((max, [goal, actions]) => 
-      actions.length > ((max as any).actions?.length || 0) ? { goal, actions } : max, {} as any
-    );
+    // Find the most active goal
+    let mostActiveGoalName = '';
+    let maxActions = 0;
+    for (const [goalName, goalActions] of Object.entries(actionsByGoal)) {
+      if ((goalActions as any[]).length > maxActions) {
+        maxActions = (goalActions as any[]).length;
+        mostActiveGoalName = goalName;
+      }
+    }
     
-    if ((mostActiveGoal as any).goal) {
-      insights.push(`You were most active in "${(mostActiveGoal as any).goal}" with ${(mostActiveGoal as any).actions.length} completed actions.`);
+    if (mostActiveGoalName) {
+      insights.push(`You were most active in "${mostActiveGoalName}" with ${maxActions} completed actions.`);
     }
   } else {
     insights.push("This week is a fresh start - every expert was once a beginner!");
