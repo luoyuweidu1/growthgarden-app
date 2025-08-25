@@ -185,6 +185,115 @@ router.put('/:id', authenticateToken, validateBody(UpdateActionSchema), async (r
   }
 });
 
+// Complete action (convenience endpoint)
+router.patch('/:id/complete', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const action = await prisma.action.findFirst({
+      where: { 
+        id: req.params.id,
+        userId: req.user!.id 
+      },
+    });
+
+    if (!action) {
+      return res.status(404).json({ error: 'Action not found' });
+    }
+
+    if (action.status === 'completed') {
+      return res.status(400).json({ error: 'Action is already completed' });
+    }
+
+    const updatedAction = await prisma.action.update({
+      where: { id: req.params.id },
+      data: {
+        status: 'completed',
+        completedAt: new Date(),
+      },
+      include: {
+        goal: {
+          select: {
+            id: true,
+            name: true,
+            plantType: true,
+          },
+        },
+      },
+    });
+
+    // Add XP to the goal
+    const goal = await prisma.goal.findUnique({
+      where: { id: action.goalId },
+    });
+
+    if (goal) {
+      let newXP = goal.currentXP + action.xpReward;
+      let newLevel = goal.currentLevel;
+      let newMaxXP = goal.maxXP;
+
+      // Level up logic
+      while (newXP >= newMaxXP) {
+        newXP -= newMaxXP;
+        newLevel += 1;
+        newMaxXP = Math.floor(newMaxXP * 1.5);
+      }
+
+      await prisma.goal.update({
+        where: { id: goal.id },
+        data: {
+          currentXP: newXP,
+          currentLevel: newLevel,
+          maxXP: newMaxXP,
+          lastWatered: new Date(), // Update last watered when completing actions
+        },
+      });
+    }
+
+    res.json(updatedAction);
+  } catch (error) {
+    console.error('Complete action error:', error);
+    res.status(500).json({ error: 'Failed to complete action' });
+  }
+});
+
+// Save reflection endpoint
+router.patch('/:id/reflection', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const action = await prisma.action.findFirst({
+      where: { 
+        id: req.params.id,
+        userId: req.user!.id 
+      },
+    });
+
+    if (!action) {
+      return res.status(404).json({ error: 'Action not found' });
+    }
+
+    const { reflection } = req.body;
+
+    const updatedAction = await prisma.action.update({
+      where: { id: req.params.id },
+      data: {
+        description: reflection, // Store reflection in description field for now
+      },
+      include: {
+        goal: {
+          select: {
+            id: true,
+            name: true,
+            plantType: true,
+          },
+        },
+      },
+    });
+
+    res.json(updatedAction);
+  } catch (error) {
+    console.error('Save reflection error:', error);
+    res.status(500).json({ error: 'Failed to save reflection' });
+  }
+});
+
 // Delete action
 router.delete('/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
