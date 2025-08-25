@@ -14,6 +14,7 @@ import userRoutes from './routes/users.js';
 import goalRoutes from './routes/goals.js';
 import actionRoutes from './routes/actions.js';
 import habitRoutes from './routes/habits.js';
+import reportRoutes from './routes/reports.js';
 
 // Load environment variables
 dotenv.config();
@@ -117,6 +118,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/actions', actionRoutes);
 app.use('/api/daily-habits', habitRoutes);
+app.use('/api/reports', reportRoutes);
 
 // 404 handler
 app.use((req, res) => {
